@@ -1,0 +1,14 @@
+{
+    "name": "torx",
+    "version": "0.0.1",
+    "description": "Connect NodeJS to web pages.",
+    "main": "index.js",
+    "scripts": {
+        "test": "echo \"Error: no test specified\" && exit 1"
+    },
+    "keywords": [
+        "torx", "express", "node", "js", "html"
+    ],
+    "author": "slulego",
+    "license": "ISC"
+}
