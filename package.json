@@ -1,7 +1,7 @@
 {
     "name": "torx",
     "version": "0.0.1",
-    "description": "Connect NodeJS to web pages.",
+    "description": "Connect Node to web pages.",
     "main": "index.js",
     "scripts": {
         "test": "echo \"Error: no test specified\" && exit 1"

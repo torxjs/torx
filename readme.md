@@ -1,6 +1,6 @@
 # Torx (Alpha)
 
-Connect NodeJS to web pages.
+Connect Node to web pages.
 
 
 
