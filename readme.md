@@ -28,7 +28,7 @@ The result:
 Pass variables easily from node and express.
 ```js
 res.render('index', {
-	title: 'My Tools',
+	title: 'My Tools'
 })
 ```
 
