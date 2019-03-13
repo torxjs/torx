@@ -6,7 +6,6 @@ Connect Node to web pages.
 
 Write server-side JavaScript inside HTML using a code block:
 
-`index.torx`
 ```html
 @{
     title = 'My Tools';
@@ -15,16 +14,18 @@ Write server-side JavaScript inside HTML using a code block:
 <html>...
 ```
 
-Output JavaScript variables:
+Output variables:
 
 ```html
 <h1>@title</h1>
 ```
-Outputs
+
+The result:
 ```html
 <h1>My Tools</h1>
 ```
-You can also pass variables easily from express.
+
+Pass variables easily from node and express.
 ```js
 res.render('index', {
 	title: 'My Tools',
@@ -34,10 +35,10 @@ res.render('index', {
 Use parenthisis to output complex values.
 
 ```html
-<h1>@(title.toUpperCase() + '!')</h1>
+<h1>@( title.toUpperCase() + '!' )</h1>
 ```
 
-Loop just like in JavaScript:
+Loop html just like in JavaScript:
 
 ```html
 @for (tool in tools) {
@@ -57,7 +58,9 @@ Make comments anywhere:
 ```html
 @* These are my tools *@
 ```
-# Example:
+# Example using Express:
+
+The file extension is `.torx`
 
 `index.torx`
 
@@ -73,7 +76,7 @@ Make comments anywhere:
     <h1>@(title.toUpperCase() + '!')</h1>
 
     @* These are my tools *@
-    <ul>
+	<ul>
 		@for (tool in tools) {
 			<li @if (tools[tool] === 'Wrench') { style="color: blue;" }>
 				@tools[tool]
@@ -84,7 +87,7 @@ Make comments anywhere:
 </body>
 </html>
 ```
-Here's an example of how to set up with express:
+`app.js`
 
 ``` javascript
 const express = require('express')
