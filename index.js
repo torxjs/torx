@@ -11,6 +11,7 @@ module.exports = function (filePath, input, callback) {
 		try {
 			with(input)
 			eval(rendered);
+			// console.log(rendered);
 		} catch (err) {
 			console.error(err.stack);
 		}
@@ -25,16 +26,17 @@ function render(text) {
 		return text;
 	}
 
-	// Loop all @ symbols
+	// Loop @
 	var output = '';
 	var lastIndex = 0;
 	var symbolIndex = -1;
 	while ((symbolIndex = text.indexOf('@', symbolIndex + 1)) >= 0) {
-		// Next char
+		// Next character
 		switch (text.charAt(symbolIndex + 1)) {
 			case '{':
 				// Code block
-				log('Code block');
+
+				debug('Code block');
 				output += text.slice(lastIndex, symbolIndex) + '\`;';
 				lastIndex = symbolIndex + 2;
 
@@ -45,8 +47,9 @@ function render(text) {
 				symbolIndex = lastIndex;
 				break;
 			case '(':
-				// Expression Group
-				log('Expression group');
+				// Expression group
+
+				//debug('Expression group');
 				output += text.slice(lastIndex, symbolIndex) + '\`+';
 				lastIndex = symbolIndex + 2;
 
@@ -55,68 +58,79 @@ function render(text) {
 
 				lastIndex += javascript.length + 1;
 				break;
-				// case '[':
-				//     // Comment
-				//     log('Comment');
-
-				//     output += text.slice(lastIndex, symbolIndex);
-				//     lastIndex = symbolIndex + 2;
-
-				//     var comment = getInsideBracket(text.slice(lastIndex), '[', ']');
-
-				//     lastIndex += comment.length + 1;
-				break;
 			case '@':
 				// Escape symbol
-				log('Escape symbol');
+
+				//debug('Escape symbol');
 				output += text.slice(lastIndex, symbolIndex + 1);
 				lastIndex = symbolIndex + 2;
 				symbolIndex++;
 				break;
 			default:
-				var word = /^(\w+)[\w\.\[\]\(\)]*/.exec(text.slice(symbolIndex + 1));
-				// log(word);
+				// var word = /^(\w+)[\w\.\[\](\(.*\))]*/.exec(text.slice(symbolIndex + 1));
+				var word = /(\w+)((?=\.\w)\.\w+)*((?=\(.*\))\(.*\))?((?=\[.*\]).*\])?/.exec(text.slice(symbolIndex + 1));
+				// debug(word);
 				if (word) {
-					if (['if', 'for', 'while'].indexOf(word[1].toString()) > -1) {
+					if (['function'].indexOf(word[1].toString()) > -1) {
 						// Function
-						log('Function - ' + word[1]);
 
 						// Output HTML
 						output += text.slice(lastIndex, symbolIndex) + '\`;';
 						// Find '{' after function
 						var functionParams = text.slice(symbolIndex).indexOf('{') + 1;
 						// Output function with params
-						output += text.slice(symbolIndex + 1, symbolIndex + functionParams) + 'output+=\`';
+						// debug(' Control: ' + text.slice(symbolIndex, functionParams));
+						output += text.slice(symbolIndex + 1, symbolIndex + functionParams) + 'return `';
 						lastIndex = symbolIndex + functionParams;
 						// Render 
 						var functionOutput = getInsideBracket(text.slice(lastIndex), '{', '}');
-						// log(functionOutput);
+						// debug(functionOutput);
 						// output += render(text.slice(lastIndex, functionOutput)) + '}+var output+=\`';
 						output += render(functionOutput) + '\`}output+=\`';
 						lastIndex += functionOutput.length + 1;
 						symbolIndex = lastIndex;
+
+					} else if (['if', 'for', 'while'].indexOf(word[1].toString()) > -1) {
+						// Control
+
+						//debug('Control - ' + word[1]);
+						// Output HTML
+						output += text.slice(lastIndex, symbolIndex) + '\`;';
+						// Find '{' after control
+						var controlParams = text.slice(symbolIndex).indexOf('{') + 1;
+						// Output control with params
+						// debug(' Control: ' + text.slice(symbolIndex, controlParams));
+						output += text.slice(symbolIndex + 1, symbolIndex + controlParams) + 'output+=\`';
+						lastIndex = symbolIndex + controlParams;
+						// Render 
+						var controlOutput = getInsideBracket(text.slice(lastIndex), '{', '}');
+						// debug(controlOutput);
+						// output += render(text.slice(lastIndex, controlOutput)) + '}+var output+=\`';
+						output += render(controlOutput) + '\`}output+=\`';
+						lastIndex += controlOutput.length + 1;
+						symbolIndex = lastIndex;
 					} else {
 						// Expression
-						log('Expression - ' + word[0]);
 
+						// debug('Expression - ' + word);
 						output += text.slice(lastIndex, symbolIndex) + '\`+' + word[0] + '+\`';
 						lastIndex = symbolIndex + word[0].length + 1;
 					}
 				} else {
-					log('Lonely @');
+					debug('Lonely @');
 				}
 				break;
 		}
 	}
 
 	output += text.slice(lastIndex);
-	// log('Rendered');
+	// debug('Rendered');
 
 	return output;
 }
 
-function log(text) {
-	// console.log(text);
+function debug(text) {
+	console.log(text);
 }
 
 function getInsideBracket(text, openBracket, closeBracket) {
@@ -138,7 +152,7 @@ function getInsideBracket(text, openBracket, closeBracket) {
 				if (!doubleQoutes && !singleQoutes) {
 					depth--
 					if (depth == 0) {
-						// log(text.slice(0, position + 1))
+						// debug(text.slice(0, position + 1))
 						return text.slice(0, position);
 					}
 				}
