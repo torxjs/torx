@@ -8,8 +8,8 @@ Write server-side JavaScript inside HTML using a code block:
 
 ```html
 @{
-    title = 'My Tools';
-    tools = ['Hammer', 'Wrench', 'Screw Driver'];
+    title = 'Buy Tools';
+    tools = ['Hammer', 'Wrench', 'Drill'];
 }
 <html>...
 ```
@@ -25,17 +25,36 @@ The result:
 <h1>My Tools</h1>
 ```
 
-Pass variables easily from node and express.
+Create helper functions:
+
+```html
+@function button(label) {
+	<button>@label</button>
+}
+
+<div>@button('I like tools!')</div>
+```
+
+Loop everything:
+```html
+<ul>
+	@for (index in tools) {
+		<li>@button(tools[index])</li>
+	}
+</ul>
+```
+
+Pass variables easily from Node.
 ```js
 res.render('index', {
 	title: 'My Tools'
 })
 ```
 
-Use parenthisis to output complex values.
+Use parentheses when needed.
 
 ```html
-<h1>@( title.toUpperCase() + '!' )</h1>
+<strong>Total: @( price + (price * 0.07) )</strong>
 ```
 
 Loop html just like in JavaScript:
@@ -67,7 +86,7 @@ The file extension is `.torx`
 ```html
 @{
     title = 'My Tools';
-    tools = ['Hammer', 'Wrench', 'Screw Driver'];
+    tools = ['Hammer', 'Wrench', 'Drill'];
 }
 
 <html>
@@ -102,7 +121,7 @@ app.set('view engine', 'torx') // Register the template engine
 app.get('/', function (req, res) {
     res.render('index', {
         title: 'My Tools',
-        tools: ['Hammer', 'Wrench', 'Screw Driver']
+        tools: ['Hammer', 'Wrench', 'Drill']
     })
 })
 var port = 3000;
