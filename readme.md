@@ -2,7 +2,13 @@
 
 Connect Node to web pages.
 
+## Quick Links
 
+[Repository](https://github.com/slulego/Torx) on GitHub
+
+[Torx Extension](https://marketplace.visualstudio.com/items?itemName=Slulego.torx) for Visual Studio Code
+
+## Overview
 
 Write server-side JavaScript inside HTML using a code block:
 
