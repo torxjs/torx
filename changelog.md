@@ -1,7 +1,10 @@
+# 0.0.4
+
+- Added if else/elseif functionality.
+
 # 0.0.3
 
 - Added quick links to readme.
-
 
 # 0.0.2
 
