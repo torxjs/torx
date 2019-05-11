@@ -9,9 +9,9 @@ module.exports = function (filePath, input, callback) {
 		rendered = 'output=\`' + render(rendered) + '\`;';
 
 		try {
-			with(input)
+			with (input)
+			// debug(rendered);
 			eval(rendered);
-			// console.log(rendered);
 		} catch (err) {
 			console.error(err.stack);
 		}
@@ -26,17 +26,23 @@ function render(text) {
 		return text;
 	}
 
+	// Clean backticks
+	// text = text.replace(/\`/g, 'XD');
+	// text = String.raw(text);
+
 	// Loop @
 	var output = '';
 	var lastIndex = 0;
 	var symbolIndex = -1;
+	var lastControl = '';
+
 	while ((symbolIndex = text.indexOf('@', symbolIndex + 1)) >= 0) {
 		// Next character
 		switch (text.charAt(symbolIndex + 1)) {
 			case '{':
 				// Code block
 
-				debug('Code block');
+				// debug('Code block');
 				output += text.slice(lastIndex, symbolIndex) + '\`;';
 				lastIndex = symbolIndex + 2;
 
@@ -45,6 +51,13 @@ function render(text) {
 
 				lastIndex += javascript.length + 1;
 				symbolIndex = lastIndex;
+
+				// debug(lastControl);
+
+
+				// if (lastControl == 'if') {
+				// 	debug(text.substr(text.indexOf('}', 10)));
+				// }
 				break;
 			case '(':
 				// Expression group
@@ -89,11 +102,12 @@ function render(text) {
 						output += render(functionOutput) + '\`}output+=\`';
 						lastIndex += functionOutput.length + 1;
 						symbolIndex = lastIndex;
-
 					} else if (['if', 'for', 'while'].indexOf(word[1].toString()) > -1) {
 						// Control
 
-						//debug('Control - ' + word[1]);
+						// debug('Control - ' + word[1]);
+						lastControl = word[1].toString();
+
 						// Output HTML
 						output += text.slice(lastIndex, symbolIndex) + '\`;';
 						// Find '{' after control
@@ -106,9 +120,52 @@ function render(text) {
 						var controlOutput = getInsideBracket(text.slice(lastIndex), '{', '}');
 						// debug(controlOutput);
 						// output += render(text.slice(lastIndex, controlOutput)) + '}+var output+=\`';
-						output += render(controlOutput) + '\`}output+=\`';
+
+						// output += render(controlOutput) + '\`}output+=\`';
+						output += render(controlOutput);
+
 						lastIndex += controlOutput.length + 1;
 						symbolIndex = lastIndex;
+
+						if (word[1] == 'if') {
+							// Includes elseif
+							let nextWord = 'else';
+							let nextWordIndex = text.slice(symbolIndex).indexOf(nextWord);
+
+							if (nextWordIndex == 0 || nextWordIndex == 1) {
+								// 		debug(text.slice(symbolIndex));
+
+								// 		// debug(text.substr(nextWordIndex, 20));
+
+								// 		// // // Output HTML
+								output += '\`;';
+
+								// // Find '{' after 'else'
+								var controlParams = text.slice(symbolIndex).indexOf('{') + 1;
+
+								output += '}' + text.slice(symbolIndex, symbolIndex + controlParams) + 'output+=\`';
+								// 		//'output+=\`'
+								// 		// lastIndex = nextWordIndex + controlParams;
+
+								// debug(text.slice(symbolIndex));
+								var controlOutput = getInsideBracket(text.slice(symbolIndex + controlParams), '{', '}');
+								// 		// // output += render(text.slice(lastIndex, controlOutput)) + '}+var output+=\`';
+								output += render(controlOutput) + '\`}output+=\`';
+
+								lastIndex += controlParams + controlOutput.length + 1;
+								symbolIndex = lastIndex;
+
+							} else {
+								output += '\`}output+=\`';
+							}
+
+
+						} else {
+							output += '\`}output+=\`';
+						}
+
+						// debug(output);
+
 					} else {
 						// Expression
 
@@ -177,4 +234,8 @@ function getInsideBracket(text, openBracket, closeBracket) {
 
 	console.error('No matching brackets found in: \n' + text)
 	return '';
+}
+
+function escapeBacktick(code) {
+	return code.replace(/\`/g, '\`');
 }
