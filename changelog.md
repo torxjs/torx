@@ -1,3 +1,8 @@
+# 0.0.5
+
+- Debugging now shows the file and line number.
+- Bug fixes
+
 # 0.0.4
 
 - Added if else/elseif functionality.

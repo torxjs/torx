@@ -1,11 +1,8 @@
 {
 	"name": "torx",
-	"version": "0.0.4",
+	"version": "0.0.5",
 	"description": "Connect Node to web pages.",
 	"main": "index.js",
-	"scripts": {
-		"test": "echo \"Error: no test specified\" && exit 1"
-	},
 	"keywords": [
 		"torx",
 		"express",
