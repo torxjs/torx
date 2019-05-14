@@ -1,6 +1,6 @@
 # 0.0.5
 
-- Debugging now shows the file and line number.
+- Debugging now shows the file name and line number.
 - Bug fixes
 
 # 0.0.4
