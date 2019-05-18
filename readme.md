@@ -1,25 +1,27 @@
-# Torx (Alpha)
-
-Connect Node to web pages.
+# Torx
+Build web pages with JavaScript.
 
 ## Quick Links
 
-[Repository](https://github.com/slulego/Torx) on GitHub
+[Repository](https://github.com/slulego/Torx) on GitHub - Feel free to contribute!
 
 [Torx Extension](https://marketplace.visualstudio.com/items?itemName=Slulego.torx) for Visual Studio Code
 
-## Overview
+
+# Overview
+
+## Code Blocks
 
 Write server-side JavaScript inside HTML using a code block:
 
 ```html
 @{
-    title = 'Buy Tools';
-    tools = ['Hammer', 'Wrench', 'Drill'];
+    var title = "Page Title";
+    var pages = ["Home", "About", "Contact"];
 }
 <html>...
 ```
-
+## Variables
 Output variables:
 
 ```html
@@ -28,91 +30,94 @@ Output variables:
 
 The result:
 ```html
-<h1>My Tools</h1>
+<h1>Page Title</h1>
 ```
 
-Create helper functions:
+Use parentheses when needed.
+
+```html
+<strong>Total: @(price + tax)</strong>
+```
+## Functions
+
+Create helpers:
 
 ```html
 @function button(label) {
 	<button>@label</button>
 }
 
-<div>@button('I like tools!')</div>
+<div>@button('Click Me!')</div>
 ```
 
+## Controls
 Loop everything:
 ```html
-<ul>
-	@for (index in tools) {
-		<li>@button(tools[index])</li>
-	}
-</ul>
-```
-
-Pass variables easily from Node.
-```js
-res.render('index', {
-	title: 'My Tools'
-})
-```
-
-Use parentheses when needed.
-
-```html
-<strong>Total: @( price + (price * 0.07) )</strong>
-```
-
-Loop html just like in JavaScript:
-
-```html
-@for (tool in tools) {
-    <li>@tool</li>
+@for (index in pages) {
+	<li>@button(pages[index])</li>
 }
 ```
 
-Conditions:
+```html
+@while (counter > 3) {
+	@{ counter++; }
+	<a>@counter</a>
+}
+```
+
+
+## Conditions
 ```html
 @if (title.length > 0) {
-    <h1>@title</h1>
+	<h1>@title</h1>
+} else {
+	<h1>Default Title</h1>
 }
 ```
-
+## Comments
 Make comments anywhere:
 
 ```html
-@* These are my tools *@
+@* This is a server-side comment. *@
 ```
-# Example using Express:
+## Passing Variables
 
-The file extension is `.torx`
+Easily send variables from Node and Express:
+```js
+res.render('index', { title: 'Page Title' })
+```
 
-`index.torx`
+# Example
+
+Create a `.torx` file:
 
 ```html
 @{
-    title = 'My Tools';
-    tools = ['Hammer', 'Wrench', 'Drill'];
+    var pages = ["Home", "About", "Contact"];
 }
 
 <html>
 <body>
 
-    <h1>@(title.toUpperCase() + '!')</h1>
+	<h1>@(title.toUpperCase() + '!')</h1>
 
-    @* These are my tools *@
+	@function link(label, href) {
+		<a href="@href">@label</a>
+	}
+
+	@* This is a list of links. *@
 	<ul>
-		@for (tool in tools) {
-			<li @if (tools[tool] === 'Wrench') { style="color: blue;" }>
-				@tools[tool]
+		@for (index in pages) {
+			<li @if (pages[index] === 'Home') { style="color: blue;" }>
+				@link(pages[index], pages[index].toLowerCase())
 			</li>
 		}
-    </ul>
+	</ul>
 
 </body>
 </html>
 ```
-`app.js`
+Setup a Node server with Express:
 
 ``` javascript
 const express = require('express')
@@ -121,15 +126,17 @@ const app = express()
 
 app.engine('torx', torx)
 
-app.set('views', './views') // Specify the views directory
-app.set('view engine', 'torx') // Register the template engine
+app.set('views', './views')
+app.set('view engine', 'torx')
 
 app.get('/', function (req, res) {
-    res.render('index', {
-        title: 'My Tools',
-        tools: ['Hammer', 'Wrench', 'Drill']
-    })
+    res.render('index', { title: "Page Title" })
 })
+
 var port = 3000;
 app.listen(port, () => console.log('Listening on http://localhost:' + port))
 ```
+
+# Release History
+
+See the [Changelog](https://github.com/slulego/Torx/blob/master/changelog.md) on GitHub.
