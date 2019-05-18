@@ -1,17 +1,25 @@
-# 0.0.5
+## 0.0.6
+
+- Added include function:
+	```
+	@include('filename')
+	```
+- Updated readme.
+
+## 0.0.5
 
 - Debugging now shows the file and line number.
-- Bug fixes
+- Bug fixes.
 
-# 0.0.4
+## 0.0.4
 
 - Added if else/elseif functionality.
 
-# 0.0.3
+## 0.0.3
 
 - Added quick links to readme.
 
-# 0.0.2
+## 0.0.2
 
 - Updated readme.
 - Added functions:
@@ -24,6 +32,6 @@
 	<div>@name('text')</div>
 	```
 
-# 0.0.1
+## 0.0.1
 
 - Initial release
