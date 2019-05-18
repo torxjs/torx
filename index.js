@@ -1,3 +1,6 @@
+const fs = require('fs');
+const path = require('path');
+
 var debugInfo = {
 	scannedText: "",
 	scannedIndex: 0,
@@ -13,8 +16,8 @@ var debugInfo = {
 
 module.exports = function (filePath, input, callback) {
 
-	require('fs').readFile(filePath, function (err, content) {
-		if (err) return callback(err);
+	fs.readFile(filePath, function (error, content) {
+		if (error) return callback(error);
 
 		debugInfo.scannedFileName = filePath;
 
@@ -119,6 +122,24 @@ function render(originalText) {
 						outputText += render(functionContent) + "\`}output+=\`";
 						scannedIndex += functionContent.length + 1;
 						symbolIndex = scannedIndex;
+					} else if ("include" == word[1].toString()) {
+						// Include a file
+
+						outputText += originalText.slice(scannedIndex, symbolIndex);
+
+						var fileName = getInsideBrackets(originalText.slice(symbolIndex), '(', ')');
+						var filePath = path.join(path.dirname(debugInfo.scannedFileName), eval(fileName));
+
+						var fileContent;
+						try {
+							fileContent = fs.readFileSync(filePath).toString();
+							outputText += render(fileContent);
+						} catch (error) {
+							console.error("Could not include file \"" + eval(fileName) + "\" at line " + debugInfo.getCurrentLine());
+						}
+
+						scannedIndex = symbolIndex + word[0].length + 1;
+
 					} else if (['if', 'for', 'while'].indexOf(word[1].toString()) > -1) {
 						// Control @if
 
