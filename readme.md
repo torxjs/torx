@@ -1,9 +1,11 @@
 # Torx
-Build web pages with JavaScript.
+JavaScript template engine based on Razor syntax.
 
 ## Quick Links
 
-[Repository](https://github.com/slulego/Torx) on GitHub - Feel free to contribute!
+[Package](https://www.npmjs.com/package/torx) on NPM
+
+[Repository](https://github.com/slulego/torx) on GitHub
 
 [Torx Extension](https://marketplace.visualstudio.com/items?itemName=Slulego.torx) for Visual Studio Code
 

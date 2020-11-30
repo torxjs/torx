@@ -1,9 +1,12 @@
 {
 	"name": "torx",
-	"version": "0.0.6",
-	"description": "Connect Node to web pages.",
-	"main": "index.js",
+	"version": "0.1.0",
+	"description": "JavaScript template engine based on Razor syntax.",
+	"main": "torx.js",
 	"keywords": [
+		"template",
+		"view",
+		"nodejs",
 		"torx",
 		"express",
 		"node",
@@ -12,8 +15,8 @@
 	],
 	"repository": {
 		"type": "git",
-		"url": "https://github.com/slulego/Torx.git"
+		"url": "https://github.com/slulego/torx.git"
 	},
-	"author": "slulego",
-	"license": "ISC"
+	"author": "slulego, sky",
+	"license": "MIT"
 }
