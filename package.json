@@ -2,7 +2,16 @@
 	"name": "torx",
 	"version": "0.1.0",
 	"description": "JavaScript template engine based on Razor syntax.",
+	"author": "slulego, sky",
+	"license": "MIT",
+	"repository": {
+		"type": "git",
+		"url": "https://github.com/slulego/torx.git"
+	},
 	"main": "torx.js",
+	"bin": {
+		"torx": "torx.js"
+	},
 	"keywords": [
 		"template",
 		"view",
@@ -12,11 +21,5 @@
 		"node",
 		"js",
 		"html"
-	],
-	"repository": {
-		"type": "git",
-		"url": "https://github.com/slulego/torx.git"
-	},
-	"author": "slulego, sky",
-	"license": "MIT"
+	]
 }
