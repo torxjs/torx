@@ -1,3 +1,5 @@
+#!/usr/bin/env node
+
 /**
  * Forked from Saker
  * Copyright © 2017 Sky <eshengsky@163.com>
@@ -8,6 +10,7 @@
 !function () {
     var isNode = typeof window === 'undefined',
         isProd = false,
+        isCLI = !module.parent,
         fs,
         path;
 
@@ -130,7 +133,7 @@
 
     function getFileWithExt(filePath) {
         if (filePath.indexOf('.') === -1) {
-            filePath += '.html';
+            filePath += '.torx';
         }
         return filePath;
     }
@@ -240,7 +243,7 @@
          * Self-closing tags type.
          */
 
-        selfClosedTags: ['br', 'hr', 'img', 'input', 'link', 'meta', 'area', 'base', 'col', 'command', 'embed', 'keygen', 'param', 'source', 'track', 'wbr'],
+        selfClosedTags: ['br', 'hr', 'img', 'input', 'link', 'meta', 'area', 'base', 'col', 'command', 'embed', 'keygen', 'param', 'source', 'track', 'wbr', 'line', 'polyline', 'ellipse', 'rect', 'path'],
 
         /**
          * Read client markup.
@@ -270,7 +273,7 @@
                     });
                 }
 
-                //Meet '>' and there exists start tag.
+                //Meet '>' and there is a start tag.
                 if (char === '>' && this.tags.length > 0) {
                     //...</div> , <img >
                     if (new RegExp('<(\\\\)?\/' + this.tags[this.tags.length - 1].type + '\\s*>$').test(this.readPrevChars() + char) || this.selfClosedTags.indexOf(this.tags[this.tags.length - 1].type) > -1) {
@@ -387,7 +390,7 @@
             for (; this.position < len; this.position++) {
                 char = this.readNextChars(1);
                 if (char === configure.symbol) {
-                    let errorMessage = 'In a script block, write scripts without prefix ' + configure.symbol + '.';
+                    let errorMessage = 'In a script block, write scripts without prefix ' + configure.symbol;
                     throw new TorxError(errorMessage, this.getStackString(errorMessage, this.getLineNum(this.position)));
                 }
                 //Handle quotes.
@@ -495,7 +498,7 @@
             this.state = stateEnum.client;
             this.position++;
             if (flag !== 0) {
-                let errorMessage = '"(" is missing the closing ")".';
+                let errorMessage = '"(" is missing the closing ")"';
                 throw new TorxError(errorMessage, this.getStackString(errorMessage, this.getLineNum(startPosition)));
             }
             return result;
@@ -696,7 +699,7 @@
                             processor.position += matchedText.length;
                             processor.state = stateEnum.client;
                         } else {
-                            let errorMessage = 'Comments ' + configure.symbol + '* is missing the closing *' + configure.symbol + '.';
+                            let errorMessage = 'Comments ' + configure.symbol + '* is missing the closing *' + configure.symbol;
                             throw new TorxError(errorMessage, processor.getStackString(errorMessage, processor.getLineNum(processor.position)));
                         }
                     }
@@ -813,7 +816,7 @@
                     }
                     //@ abc, @", @? and other special characters.
                     else {
-                        let errorMessage = 'Illegal character after ' + configure.symbol + '.';
+                        let errorMessage = 'Illegal character after ' + configure.symbol;
                         throw new TorxError(errorMessage, processor.getStackString(errorMessage, processor.getLineNum(processor.position)));
                     }
                 } else {
@@ -827,15 +830,15 @@
         }
         //Check match.
         if (processor.tags.length > 0) {
-            let errorMessage = 'There exists unclosed tags!';
+            let errorMessage = 'There are unclosed tags';
             throw new TorxError(errorMessage, processor.getStackString(errorMessage, processor.getLineNum(processor.tags[processor.tags.length - 1].position)));
         }
         if (processor.braces.length > 0) {
-            let errorMessage = 'There exists unmatched braces!';
+            let errorMessage = 'There are unmatched braces';
             throw new TorxError(errorMessage, processor.getStackString(errorMessage, processor.getLineNum(processor.braces[processor.braces.length - 1].position)));
         }
         if (processor.brackets.length > 0) {
-            let errorMessage = 'There exits unmatched brackets!';
+            let errorMessage = 'There are unmatched brackets';
             throw new TorxError(errorMessage, processor.getStackString(errorMessage, processor.getLineNum(processor.brackets[processor.brackets.length - 1])));
         }
         return contentProcessor;
@@ -893,9 +896,9 @@
             var contentProcessor = centerProcessor(template);
             var content = contentProcessor.getContent();
             if (configure.debug) {
-                console.log('parsed start >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>\n');
-                console.log(content);
-                console.log('parsed end <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<\n\n');
+                // console.log('parsed start >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>\n');
+                // console.log(content);
+                // console.log('parsed end <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<\n\n');
             }
             return function (model, cb) {
                 if (typeof model === 'function') {
@@ -932,6 +935,12 @@
                 fn += 'this.renderPartial = torx.renderPartial = function(filePath){$torx_data$.push(this._renderPartialFn(filePath, model));};\n';
                 //renderBody
                 fn += 'this.renderBody = torx.renderBody = function(){model.$renderBodyFlag$ = true;$torx_data$.push(this._renderBodyFn());};\n';
+                //debug
+                // if(debug){
+                //     fn += 'this.debug = torx.debug = function() {if(configure.debug){return console.log.apply(this, arguments);}};\n';
+                // } else {
+                //     fn += 'this.debug = torx.debug = function() {};\n'
+                // }
                 //Attach parsed scripts.
                 fn += content + '\n';
                 fn += 'return $torx_data$.join("");';
@@ -952,9 +961,9 @@
                         });
 
                         if (configure.debug) {
-                            console.log('html start >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>\n');
-                            console.log(html);
-                            console.log('html end <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<\n\n');
+                            // console.log('html start >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>\n');
+                            // console.log(html);
+                            // console.log('html end <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<\n\n');
                         }
 
                         //The browsers.
@@ -1021,9 +1030,9 @@
                     });
 
                     if (configure.debug) {
-                        console.log('html start >>>>>>>>>>>>>>>>>>>\n');
-                        console.log(html);
-                        console.log('html end <<<<<<<<<<<<<<<<<<<<<<\n\n');
+                        // console.log('html start >>>>>>>>>>>>>>>>>>>\n');
+                        // console.log(html);
+                        // console.log('html end <<<<<<<<<<<<<<<<<<<<<<\n\n');
                     }
 
                     if (!isNode) {
@@ -1098,6 +1107,45 @@
 
     if (isNode) {
         module.exports = torx;
+
+        /* 
+         * Command line interface
+         * torx [file-source] [file-output]
+        */
+        if (isCLI) {
+            if (process.argv[2] && process.argv[3]) {
+
+                source = process.argv[2];
+                build = process.argv[3];
+
+                if (fs.existsSync(source) || fs.existsSync(source + '.torx')) {
+
+                    configure.defaultLayout = ''
+
+                    torx.renderView(source, {}, function (error, html) {
+                        if (error) {
+                            console.log(error)
+                        } else {
+                            fs.writeFile(build, html, function (err) {
+                                if (err) return console.log(err)
+                                console.log('Build successful', build)
+                            })
+                        }
+                    })
+                } else {
+                    console.error(`Source file '${source}' does not exist.`)
+                }
+            } else if (process.argv[2]) {
+                let argument = process.argv[2]
+                if (argument == '-v' || argument == '--version') {
+                    console.log('torx@' + require('./package.json').version)
+                } else {
+                    console.error(`Unknown command '${argument}'. \nAcceptable commands are -v, --version, and [source-file] [build-file].`)
+                }
+            } else {
+                console.log('A source file and an output file are required.');
+            }
+        }
     }
     else {
         window.torx = {

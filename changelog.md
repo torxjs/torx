@@ -2,6 +2,11 @@
 29 Nov 2020
 
 - Forked from github.com/eshengsky/saker
+- Added command line interface
+
+	```
+	torx filename build.html
+	```
 
 ## 0.0.6
 18 May 2019
