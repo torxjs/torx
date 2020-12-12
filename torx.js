@@ -689,11 +689,11 @@
                         });
                     }
                     //@//...
-                    else if (nextChar === '/' && processor.readNextChars(2) === '//') {
-                        matchedText = processor.readNextChars().match(/\/\/.*/)[0];
-                        processor.position += matchedText.length;
-                        processor.state = stateEnum.client;
-                    }
+                    // else if (nextChar === '/' && processor.readNextChars(2) === '//') {
+                    //     matchedText = processor.readNextChars().match(/\/\/.*/)[0];
+                    //     processor.position += matchedText.length;
+                    //     processor.state = stateEnum.client;
+                    // }
                     //@*...*@
                     else if (nextChar === '*') {
                         if (new RegExp('\\*[\\s\\S]*?\\*' + configure.symbol).test(processor.readNextChars())) {
@@ -926,8 +926,8 @@
                         },
                         _renderPartialFn: innerHelper.renderPartialFn,
                         file: {
-                            read: function (filePath){
-                                return fs.readFileSync(filePath)
+                            read: function (url){
+                                return fs.readFileSync(url)
                             }
                         }
                     };
@@ -942,12 +942,18 @@
                         variables += 'var ' + item + ' = model.' + item + ';\n';
                     })
                 }
+
+                //torx.renderParial(url)
+                //torx.renderBody()
+                //torx.raw()
+                //torx.escapeHtml()
+                
                 fn += variables;
                 fn += 'var $torx_escapeHtml$ = ' + innerHelper.escapeHtml.toString() + ';\n';
                 //write、writeLiteral
                 fn += 'var _this = this,$torx_data$ = [],\n $torx_writeLiteral$ = function(code) { $torx_data$.push(code); },\n $torx_write$ = function(code){ $torx_writeLiteral$(($torx_escapeHtml$(code))); };\n';
                 //renderPartial
-                fn += 'this.renderPartial = torx.renderPartial = function(filePath){$torx_data$.push(this._renderPartialFn(filePath, model));};\n';
+                fn += 'this.renderPartial = torx.renderPartial = function(url){$torx_data$.push(this._renderPartialFn(url, model));};\n';
                 //renderBody
                 fn += 'this.renderBody = torx.renderBody = function(){model.$renderBodyFlag$ = true;$torx_data$.push(this._renderBodyFn());};\n';
                 //readFile
