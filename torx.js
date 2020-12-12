@@ -22,7 +22,7 @@
 
     /**
      * Configure set.
-     * @type {{debug: boolean, defaultLayout: string, partialViewDir: string}}
+     * @type {{debug: boolean, symbol: string, defaultLayout: string, partialViewDir: string}}
      */
 
     var configure = {
@@ -111,7 +111,7 @@
 
     /**
      * Custom error.
-     * @param message
+     * @param {string} message
      * @param stack
      * @constructor
      */
@@ -127,20 +127,20 @@
 
     /**
      * Get file name with extension.
-     * @param filePath
-     * @returns {*}
+     * @param {string} url
+     * @returns {string}
      */
 
-    function getFileWithExt(filePath) {
-        if (filePath.indexOf('.') === -1) {
-            filePath += '.torx';
+    function getFileWithExt(url) {
+        if (url.indexOf('.') === -1) {
+            url += '.torx';
         }
-        return filePath;
+        return url;
     }
 
     /**
      * Parse processor.
-     * @param source
+     * @param {string} source
      * @constructor
      */
 
@@ -174,11 +174,11 @@
          * @returns {{row: Number, col: *, source: Array}}
          */
 
-        getLineNum: function (pos) {
-            if (pos === undefined) {
-                pos = this.position;
+        getLineNum: function (position) {
+            if (position === undefined) {
+                position = this.position;
             }
-            var lines = this.source.substring(0, pos).split(/\r?\n/),
+            var lines = this.source.substring(0, position).split(/\r?\n/),
                 row = lines.length,
                 col = lines.pop().length + 1,
                 allLines = this.source.split(/\r?\n/),
@@ -200,24 +200,25 @@
 
         /**
          * Get the stack.
-         * @param msg
-         * @param pos
+         * @param {string} message
+         * @param position
          * @returns {string}
          */
 
-        getStackString: function (msg, pos) {
-            return 'Torx Syntax Error: ' + msg + ' at position ' + pos.row + ':' + pos.col;
+        getStackString: function (message, position) {
+            return 'Torx Syntax Error: ' + message + ' at position ' + position.row + ':' + position.col;
         },
 
         /**
          * Read text from current position.
+         * @param {number} length
          * @returns {string}
          */
 
-        readNextChars: function (len) {
+        readNextChars: function (length) {
             var result = '';
-            if (len) {
-                result = this.source.substr(this.position, len);
+            if (length) {
+                result = this.source.substr(this.position, length);
             } else {
                 result = this.source.substr(this.position);
             }
@@ -226,13 +227,14 @@
 
         /**
          * Read previous text form last position.
+         * @param {number} length
          * @returns {string}
          */
 
-        readPrevChars: function (len) {
+        readPrevChars: function (length) {
             var result = '';
-            if (len) {
-                result = this.source.slice(this.position - len, this.position);
+            if (length) {
+                result = this.source.slice(this.position - length, this.position);
             } else {
                 result = this.source.substr(0, this.position);
             }
@@ -518,18 +520,18 @@
 
         /**
          * ncode special characters.
-         * @param str
+         * @param {string} text
          * @returns {string|XML}
          */
 
-        escape: function (str) {
-            return str.replace(/\\/g, '\\\\').replace(/"/g, '\\"').replace(/\r/g, '\\r').replace(/\n/g, '\\n');
+        escape: function (text) {
+            return text.replace(/\\/g, '\\\\').replace(/"/g, '\\"').replace(/\r/g, '\\r').replace(/\n/g, '\\n');
 
         },
 
         /**
          * Add segment to array.
-         * @param obj
+         * @param {object} obj
          */
 
         addSegment: function (obj) {
@@ -631,19 +633,19 @@
 
         /**
          * Render a partial view.
-         * @param filePath
-         * @param model
+         * @param {string} url
+         * @param {object} data
          * @returns {*}
          */
 
-        renderPartialFn: function (filePath, model) {
-            filePath = getFileWithExt(filePath);
-            filePath = path.join(configure.partialViewDir, filePath);
-            var partialTemp = torx.getView(filePath);
+        renderPartialFn: function (url, data) {
+            url = getFileWithExt(url);
+            url = path.join(configure.partialViewDir, url);
+            var partialTemp = torx.getView(url);
             try {
-                var html = torx.compile(partialTemp, filePath).call({
+                var html = torx.compile(partialTemp, url).call({
                     layout: null
-                }, model);
+                }, data);
             } catch (err) {
                 throw err;
             }
@@ -861,23 +863,23 @@
 
         /**
          * Get view file according to the file path.
-         * @param filePath
-         * @param cb
+         * @param url
+         * @param callback
          */
 
-        getView: function (filePath, cb) {
-            filePath = getFileWithExt(filePath);
-            if (cb) {
-                fs.readFile(filePath, function (err, data) {
+        getView: function (url, callback) {
+            url = getFileWithExt(url);
+            if (callback) {
+                fs.readFile(url, function (err, data) {
                     if (err) {
-                        cb(err);
+                        callback(err);
                     } else {
-                        cb(null, data.toString('utf8'));
+                        callback(null, data.toString('utf8'));
                     }
                 })
             } else {
                 try {
-                    var data = fs.readFileSync(filePath);
+                    var data = fs.readFileSync(url);
                 } catch (err) {
                     throw err;
                 }
@@ -887,34 +889,47 @@
 
         /**
          * Compile the given template string, and return a complied function.
-         * @param template
+         * @param {string} template
+         * @returns {function}
          */
 
-        compile: function (template) {
+        compile: function (text) {
             var that = this;
             var filePath = arguments[1];
-            var contentProcessor = centerProcessor(template);
+            var contentProcessor = centerProcessor(text);
             var content = contentProcessor.getContent();
+
             if (configure.debug) {
-                // console.log('parsed start >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>\n');
-                // console.log(content);
-                // console.log('parsed end <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<\n\n');
+                console.log('parsed start >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>\n');
+                console.log(content);
+                console.log('parsed end <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<\n\n');
             }
-            return function (model, cb) {
-                if (typeof model === 'function') {
-                    cb = model;
-                    model = {};
+
+            /**
+             * @param {object} data
+             * @param {function} callback
+             */
+            return function (data, callback) {
+                if (typeof data === 'function') {
+                    callback = data;
+                    data = {};
                 }
+                var fs = require('fs')
                 var _this = this,
                     fn = '',
                     variables = '',
                     thisObj = {
-                        model: model,
+                        model: data,
                         raw: innerHelper.raw,
                         _renderBodyFn: function () {
-                            return model.$torx_body$;
+                            return data.$torx_body$;
                         },
-                        _renderPartialFn: innerHelper.renderPartialFn
+                        _renderPartialFn: innerHelper.renderPartialFn,
+                        file: {
+                            read: function (filePath){
+                                return fs.readFileSync(filePath)
+                            }
+                        }
                     };
                 //Assign this.xxx to torx.xxx
                 variables += 'var torx = {};\n';
@@ -922,8 +937,8 @@
                     variables += 'torx.' + item + ' = this.' + item + ';\n';
                 });
                 //Allow @model.xxx to @xxx.
-                if (typeof model === 'object' && Object.keys(model).length > 0) {
-                    Object.keys(model).forEach(function (item) {
+                if (typeof data === 'object' && Object.keys(data).length > 0) {
+                    Object.keys(data).forEach(function (item) {
                         variables += 'var ' + item + ' = model.' + item + ';\n';
                     })
                 }
@@ -935,6 +950,24 @@
                 fn += 'this.renderPartial = torx.renderPartial = function(filePath){$torx_data$.push(this._renderPartialFn(filePath, model));};\n';
                 //renderBody
                 fn += 'this.renderBody = torx.renderBody = function(){model.$renderBodyFlag$ = true;$torx_data$.push(this._renderBodyFn());};\n';
+                //readFile
+                fn += 'var file = this.file;\n';
+                // fn += 'this.readFile = torx.readFile = this._readFileFn;\n';
+
+
+                // _readFileFn: function (filePath) {
+                //     let fs = require('fs')
+                //     if (fs.existsSync(filePath)) {
+                //         return fs.readFileSync(filePath)
+                //     } else {
+                //         let errorMessage = 'Cannot read file at "' + filePath + '".';
+                //         console.log(errorMessage)
+                //         // throw new TorxError(errorMessage, processor.getStackString(errorMessage, processor.getLineNum(processor.position)));
+                //     }
+                // }
+
+
+                //
                 //debug
                 // if(debug){
                 //     fn += 'this.debug = torx.debug = function() {if(configure.debug){return console.log.apply(this, arguments);}};\n';
@@ -945,15 +978,15 @@
                 fn += content + '\n';
                 fn += 'return $torx_data$.join("");';
 
-                if (cb) {
+                if (callback) {
                     //Async type.
                     setImmediate(function () {
                         var html = '';
                         try {
                             //eval to evaluate js.
-                            html = new Function('model', fn).call(thisObj, model);
+                            html = new Function('model', fn).call(thisObj, data);
                         } catch (err) {
-                            return cb(new TorxError(err.message, err.stack + (filePath ? ('\n    at template file (' + getFileWithExt(filePath) + ')') : '')));
+                            return callback(new TorxError(err.message, err.stack + (filePath ? ('\n    at template file (' + getFileWithExt(filePath) + ')') : '')));
                         }
                         //Filter <text> tags.
                         html = html.replace(/<text>([\s\S]*?)<\/text>/g, function (a, b) {
@@ -961,14 +994,14 @@
                         });
 
                         if (configure.debug) {
-                            // console.log('html start >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>\n');
-                            // console.log(html);
-                            // console.log('html end <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<\n\n');
+                            console.log('html start >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>\n');
+                            console.log(html);
+                            console.log('html end <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<\n\n');
                         }
 
                         //The browsers.
                         if (!isNode) {
-                            return cb(null, html);
+                            return callback(null, html);
                         }
 
                         //Base on the layout in current scope, to fix thisObj.layout.
@@ -983,37 +1016,37 @@
                         var layoutPath = thisObj.layout;
                         if (thisObj.layout) {
                             //Indicates this is used in Express framework.
-                            if (model.settings && model.settings.views) {
-                                thisObj.layout = path.join(model.settings.views, thisObj.layout);
+                            if (data.settings && data.settings.views) {
+                                thisObj.layout = path.join(data.settings.views, thisObj.layout);
                             }
                             that.getView(thisObj.layout, function (err, layoutTemp) {
                                 if (err) {
-                                    cb(err);
+                                    callback(err);
                                 } else {
                                     thisObj.layout = null;
-                                    model.$torx_body$ = html;
+                                    data.$torx_body$ = html;
                                     try {
                                         var fn = that.compile(layoutTemp, layoutPath);
                                     } catch (err) {
-                                        return cb(err);
+                                        return callback(err);
                                     }
-                                    fn.call(thisObj, model, function (err, layoutHtml) {
+                                    fn.call(thisObj, data, function (err, layoutHtml) {
                                         if (err) {
-                                            return cb(err);
+                                            return callback(err);
                                         }
                                         //Check whether call renderBody function.
-                                        if (!model.$renderBodyFlag$) {
+                                        if (!data.$renderBodyFlag$) {
                                             let errorMessage = 'Missing renderBody in layout: ' + layoutPath + '.';
-                                            cb(new TorxError(errorMessage, errorMessage))
+                                            callback(new TorxError(errorMessage, errorMessage))
                                         } else {
-                                            cb(null, layoutHtml);
+                                            callback(null, layoutHtml);
                                         }
                                     });
                                 }
                             })
                         } else {
                             //layout is set to empty string or just null.
-                            cb(null, html);
+                            callback(null, html);
                         }
 
                     });
@@ -1021,7 +1054,7 @@
                     //Sync type.
                     var html = '';
                     try {
-                        html = new Function('model', fn).call(thisObj, model);
+                        html = new Function('model', fn).call(thisObj, data);
                     } catch (err) {
                         throw new TorxError(err.message, err.stack + (filePath ? ('\n    at template file (' + getFileWithExt(filePath) + ')') : ''));
                     }
@@ -1030,9 +1063,9 @@
                     });
 
                     if (configure.debug) {
-                        // console.log('html start >>>>>>>>>>>>>>>>>>>\n');
-                        // console.log(html);
-                        // console.log('html end <<<<<<<<<<<<<<<<<<<<<<\n\n');
+                        console.log('html start >>>>>>>>>>>>>>>>>>>\n');
+                        console.log(html);
+                        console.log('html end <<<<<<<<<<<<<<<<<<<<<<\n\n');
                     }
 
                     if (!isNode) {
@@ -1048,14 +1081,14 @@
                     }
                     var layoutPath = thisObj.layout;
                     if (thisObj.layout) {
-                        if (model.settings && model.settings.views) {
-                            thisObj.layout = path.join(model.settings.views, thisObj.layout);
+                        if (data.settings && data.settings.views) {
+                            thisObj.layout = path.join(data.settings.views, thisObj.layout);
                         }
                         var layoutTemp = that.getView(thisObj.layout);
                         thisObj.layout = null;
-                        model.$torx_body$ = html;
-                        var layoutHtml = that.compile(layoutTemp, layoutPath).call(thisObj, model);
-                        if (!model.$renderBodyFlag$) {
+                        data.$torx_body$ = html;
+                        var layoutHtml = that.compile(layoutTemp, layoutPath).call(thisObj, data);
+                        if (!data.$renderBodyFlag$) {
                             throw new TorxError('Missing renderBody in layout: ' + layoutPath + '.', 'Torx Layout Error: Missing renderBody in layout: ' + layoutPath + '.');
                         }
                         return layoutHtml;
@@ -1068,34 +1101,34 @@
 
         /**
          * Generate html according to file path and data model.
-         * @param filePath
-         * @param model
-         * @param cb
+         * @param {string} url
+         * @param {object} data
+         * @param {function} callback
          */
 
-        renderView: function (filePath, model, cb) {
+        renderView: function (url, data, callback) {
             var callback = function (err, html) {
                 if (err) {
-                    return cb(err);
+                    return callback(err);
                 }
-                return cb(null, html);
+                return callback(null, html);
             };
-            if (cache[filePath] && isProd) {
-                cache[filePath](model, callback)
+            if (cache[url] && isProd) {
+                cache[url](data, callback)
             } else {
-                torx.getView(filePath, function (err, template) {
+                torx.getView(url, function (err, template) {
                     if (err) {
-                        return cb(err);
+                        return callback(err);
                     }
                     try {
-                        var compiled = torx.compile(template, filePath);
+                        var compiled = torx.compile(template, url);
                     } catch (err) {
-                        return cb(err);
+                        return callback(err);
                     }
                     if (isProd) {
-                        cache[filePath] = compiled;
+                        cache[url] = compiled;
                     }
-                    compiled(model, callback);
+                    compiled(data, callback);
                 })
             }
         }
