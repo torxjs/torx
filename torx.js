@@ -28,7 +28,7 @@
     var configure = {
         debug: false,
         symbol: '@',
-        defaultLayout: 'layout.html',
+        defaultLayout: 'layout.torx',
         partialViewDir: './views/partials/'
     };
 
@@ -132,7 +132,7 @@
      */
 
     function getFileWithExt(url) {
-        if (url.indexOf('.') === -1) {
+        if (url.indexOf(/\.\w*$/) === -1) {
             url += '.torx';
         }
         return url;
@@ -919,14 +919,16 @@
                     fn = '',
                     variables = '',
                     thisObj = {
-                        model: data,
-                        raw: innerHelper.raw,
+                        data: data,
                         _renderBodyFn: function () {
                             return data.$torx_body$;
                         },
                         _renderPartialFn: innerHelper.renderPartialFn,
-                        file: {
-                            read: function (url){
+                        html: {
+                            raw: innerHelper.raw
+                        },
+                        system: {
+                            readFile: function (url){
                                 return fs.readFileSync(url)
                             }
                         }
@@ -936,44 +938,32 @@
                 Object.keys(thisObj).forEach(function (item) {
                     variables += 'torx.' + item + ' = this.' + item + ';\n';
                 });
-                //Allow @model.xxx to @xxx.
+                //Allow @data.xxx to @xxx.
                 if (typeof data === 'object' && Object.keys(data).length > 0) {
                     Object.keys(data).forEach(function (item) {
-                        variables += 'var ' + item + ' = model.' + item + ';\n';
+                        variables += 'var ' + item + ' = data.' + item + ';\n';
                     })
                 }
 
                 //torx.renderParial(url)
                 //torx.renderBody()
-                //torx.raw()
                 //torx.escapeHtml()
+                //html.raw()x
+                //system.readFile()
                 
                 fn += variables;
                 fn += 'var $torx_escapeHtml$ = ' + innerHelper.escapeHtml.toString() + ';\n';
                 //write、writeLiteral
                 fn += 'var _this = this,$torx_data$ = [],\n $torx_writeLiteral$ = function(code) { $torx_data$.push(code); },\n $torx_write$ = function(code){ $torx_writeLiteral$(($torx_escapeHtml$(code))); };\n';
-                //renderPartial
-                fn += 'this.renderPartial = torx.renderPartial = function(url){$torx_data$.push(this._renderPartialFn(url, model));};\n';
-                //renderBody
-                fn += 'this.renderBody = torx.renderBody = function(){model.$renderBodyFlag$ = true;$torx_data$.push(this._renderBodyFn());};\n';
-                //readFile
-                fn += 'var file = this.file;\n';
-                // fn += 'this.readFile = torx.readFile = this._readFileFn;\n';
+                //torx.renderPartial
+                fn += 'this.renderPartial = torx.renderPartial = function(url){$torx_data$.push(this._renderPartialFn(url, data));};\n';
+                //torx.renderBody
+                fn += 'this.renderBody = torx.renderBody = function(){data.$renderBodyFlag$ = true;$torx_data$.push(this._renderBodyFn());};\n';
+                //system.readFile
+                fn += 'var system = this.system;\n';
+                //html.raw
+                fn += 'var html = this.html;\n';
 
-
-                // _readFileFn: function (filePath) {
-                //     let fs = require('fs')
-                //     if (fs.existsSync(filePath)) {
-                //         return fs.readFileSync(filePath)
-                //     } else {
-                //         let errorMessage = 'Cannot read file at "' + filePath + '".';
-                //         console.log(errorMessage)
-                //         // throw new TorxError(errorMessage, processor.getStackString(errorMessage, processor.getLineNum(processor.position)));
-                //     }
-                // }
-
-
-                //
                 //debug
                 // if(debug){
                 //     fn += 'this.debug = torx.debug = function() {if(configure.debug){return console.log.apply(this, arguments);}};\n';
@@ -990,7 +980,7 @@
                         var html = '';
                         try {
                             //eval to evaluate js.
-                            html = new Function('model', fn).call(thisObj, data);
+                            html = new Function('data', fn).call(thisObj, data);
                         } catch (err) {
                             return callback(new TorxError(err.message, err.stack + (filePath ? ('\n    at template file (' + getFileWithExt(filePath) + ')') : '')));
                         }
@@ -1060,7 +1050,7 @@
                     //Sync type.
                     var html = '';
                     try {
-                        html = new Function('model', fn).call(thisObj, data);
+                        html = new Function('data', fn).call(thisObj, data);
                     } catch (err) {
                         throw new TorxError(err.message, err.stack + (filePath ? ('\n    at template file (' + getFileWithExt(filePath) + ')') : ''));
                     }
@@ -1106,21 +1096,23 @@
         },
 
         /**
-         * Generate html according to file path and data model.
+         * Generate HTML layout and view.
          * @param {string} url
          * @param {object} data
          * @param {function} callback
          */
 
         renderView: function (url, data, callback) {
-            var callback = function (err, html) {
+
+            var cb = function (err, html) {
                 if (err) {
                     return callback(err);
                 }
                 return callback(null, html);
-            };
+            }
+
             if (cache[url] && isProd) {
-                cache[url](data, callback)
+                cache[url](data, cb)
             } else {
                 torx.getView(url, function (err, template) {
                     if (err) {
@@ -1134,7 +1126,44 @@
                     if (isProd) {
                         cache[url] = compiled;
                     }
-                    compiled(data, callback);
+                    compiled(data, cb);
+                })
+            }
+        },
+
+        /**
+         * Generate HTML without a layout.
+         * @param {string} url
+         * @param {object} data
+         * @param {function} callback
+         */
+
+        renderPartial: function (url, data, callback) {
+
+            var cb = function (err, html) {
+                if (err) {
+                    return callback(err);
+                }
+                return callback(null, html);
+            }
+
+            if (cache[url] && isProd) {
+                cache[url](data, cb)
+            } else {
+                torx.config.layout = ''
+                torx.getView(url, function (err, template) {
+                    if (err) {
+                        return callback(err);
+                    }
+                    try {
+                        var compiled = torx.compile(template, url);
+                    } catch (err) {
+                        return callback(err);
+                    }
+                    if (isProd) {
+                        cache[url] = compiled;
+                    }
+                    compiled(data, cb);
                 })
             }
         }
@@ -1157,7 +1186,7 @@
                 source = process.argv[2];
                 build = process.argv[3];
 
-                if (fs.existsSync(source) || fs.existsSync(source + '.torx')) {
+                if (fs.existsSync(getFileWithExt(source))) {
 
                     configure.defaultLayout = ''
 
