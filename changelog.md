@@ -1,3 +1,12 @@
+## 0.1.1
+13 Dec 2020
+
+- Fixed implicit expressions
+- Output file is no longer required in command line
+	```
+	torx file
+	```
+
 ## 0.1.0
 29 Nov 2020
 
