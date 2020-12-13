@@ -1,16 +1,17 @@
 #!/usr/bin/env node
 
 /**
- * Forked from Saker
- * Copyright © 2017 Sky <eshengsky@163.com>
- * Modified by Slulego
+ * Created by Slulego 2020
+ * Forked from Saker by Sky
  * MIT Licensed
  */
+
+const { lookup } = require('dns');
 
 !function () {
     var isNode = typeof window === 'undefined',
         isProd = false,
-        isCLI = !module.parent,
+        isCli = !module.parent,
         fs,
         path;
 
@@ -132,7 +133,7 @@
      */
 
     function getFileWithExt(url) {
-        if (url.indexOf(/\.\w*$/) === -1) {
+        if (!url.match(/\.\w*$/)) {
             url += '.torx';
         }
         return url;
@@ -312,66 +313,93 @@
             var len = this.source.length,
                 char,
                 result = '';
+
             if (this.position >= len) {
                 return undefined;
             }
+
+            expression:
             for (; this.position < len; this.position++) {
+
                 char = this.readNextChars(1);
 
-                if (char === '(' && this.quotes.length === 0) {
-                    this.brackets.push(this.position);
-                } else if (char === ')' && this.quotes.length === 0) {
-                    this.brackets.pop();
-                }
-
-                //Special characters, except the following, and is not in quotes, all break.
-                if (['.', ',', '(', ')', '[', ']', '"', "'", ' '].indexOf(char) === -1 && /\W/.test(char) && this.quotes.length === 0) {
-                    break;
-                }
-
-                //class="@name" class="@arr.join('')"
-                if ((char === '"' || char === "'") && (this.brackets.length === 0 || this.brackets[this.brackets.length - 1] < (this.braces[this.braces.length - 1] || { position: -1 }).position)) {
-                    break;
-                }
-
-                //class="@name abc" class="@arr.join(' ') abc"
-                if (char === ' ' && (this.brackets.length === 0 || this.brackets[this.brackets.length - 1] < (this.braces[this.braces.length - 1] || { position: -1 }).position)) {
-                    break;
-                }
-
-                //class="@name.toString()abc" class="@arr.join().toString()abc"
-                if (char === ')' && [').', ')[', ')]', ')('].indexOf(this.readNextChars(2)) === -1) {
-                    result += char;
-                    this.position++;
-                    break;
-                }
-
-                if (char === ']' && ['].', '][', ']]', ']('].indexOf(this.readNextChars(2)) === -1) {
-                    result += char;
-                    this.position++;
-                    break;
-                }
-
                 //Handle quotes.
-                if ((char === '"' || char === "'") && this.readPrevChars(1) !== '\\') {
-                    if (this.quotes.length === 0) {
-                        this.quotes.push({
-                            type: char === '"' ? quotesEnum.doubleQuotes : quotesEnum.singleQuotes,
-                            position: this.position
-                        });
-                    } else if (this.quotes.length > 0) {
-                        if (char === '"' && this.quotes[0].type === quotesEnum.doubleQuotes) {
-                            this.quotes.pop();
-                        } else if (char === "'" && this.quotes[0].type === quotesEnum.singleQuotes) {
-                            this.quotes.pop();
+                if (char === '"' || char === "'") {
+                    if (this.readPrevChars(1) !== '\\' && (this.brackets.length > 0 || this.braces.length > 0)) {
+                        if (this.quotes.length === 0) {
+                            this.quotes.push({
+                                type: char === '"' ? quotesEnum.doubleQuotes : quotesEnum.singleQuotes,
+                                position: this.position
+                            });
+                        } else if (this.quotes.length > 0) {
+                            if (char === '"' && this.quotes[0].type === quotesEnum.doubleQuotes) {
+                                this.quotes.pop();
+                            } else if (char === "'" && this.quotes[0].type === quotesEnum.singleQuotes) {
+                                this.quotes.pop();
+                            }
                         }
+                    } else {
+                        break
+                    }
+                }
+
+                // If not in quotes
+                if (this.quotes.length === 0) {
+
+                    // Handle brackets () and braces []
+                    switch (char) {
+                        case '(':
+                            this.brackets.push(this.position);
+                            break;
+
+                        case ')':
+                            if (this.brackets.length > 0) {
+                                this.brackets.pop()
+                            } else {
+                                break expression;
+                            }
+                            if (this.brackets.length === 0 && [').', ')[', ')('].indexOf(this.readNextChars(2)) === -1) {
+                                result += char
+                                this.position++
+                                break expression
+                            }
+                            break;
+
+                        case '[':
+                            this.braces.push(this.position)
+                            break;
+
+                        case ']':
+                            if (this.braces.length > 0) {
+                                this.braces.pop()
+                            }
+                            if (this.braces.length === 0 && ['].', '][', ']('].indexOf(this.readNextChars(2)) === -1) {
+                                result += char
+                                this.position++
+                                break expression
+                            }
+                            break;
+                        default:
+
+                            break;
+                    }
+
+                    // If not a word or . or inside () or []
+                    if (char.match(/[\w\.\[\]\(\)]/) === null && this.brackets.length === 0 && this.braces.length === 0) {
+                        break expression
                     }
                 }
 
                 result += char;
             }
+
+            this.quotes = []
+            this.braces = []
+            this.brackets = []
+
             //Ready to switch to frontend read mode.
             this.state = stateEnum.client;
+
             return result;
         },
 
@@ -888,15 +916,15 @@
         },
 
         /**
-         * Compile the given template string, and return a complied function.
-         * @param {string} template
+         * Compile the given Torx string, and return a complied function.
+         * @param {string} script
          * @returns {function}
          */
 
-        compile: function (text) {
+        compile: function (script) {
             var that = this;
             var filePath = arguments[1];
-            var contentProcessor = centerProcessor(text);
+            var contentProcessor = centerProcessor(script);
             var content = contentProcessor.getContent();
 
             if (configure.debug) {
@@ -928,7 +956,7 @@
                             raw: innerHelper.raw
                         },
                         system: {
-                            readFile: function (url){
+                            readFile: function (url) {
                                 return fs.readFileSync(url)
                             }
                         }
@@ -950,7 +978,7 @@
                 //torx.escapeHtml()
                 //html.raw()x
                 //system.readFile()
-                
+
                 fn += variables;
                 fn += 'var $torx_escapeHtml$ = ' + innerHelper.escapeHtml.toString() + ';\n';
                 //write、writeLiteral
@@ -982,7 +1010,8 @@
                             //eval to evaluate js.
                             html = new Function('data', fn).call(thisObj, data);
                         } catch (err) {
-                            return callback(new TorxError(err.message, err.stack + (filePath ? ('\n    at template file (' + getFileWithExt(filePath) + ')') : '')));
+                            return callback(new TorxError(err.message,
+                                err.stack + (filePath ? ('\n    at template file (' + getFileWithExt(filePath) + ')') : '')));
                         }
                         //Filter <text> tags.
                         html = html.replace(/<text>([\s\S]*?)<\/text>/g, function (a, b) {
@@ -1180,38 +1209,53 @@
          * Command line interface
          * torx [file-source] [file-output]
         */
-        if (isCLI) {
-            if (process.argv[2] && process.argv[3]) {
+        if (isCli) {
+            if (process.argv[2]) {
 
-                source = process.argv[2];
-                build = process.argv[3];
-
-                if (fs.existsSync(getFileWithExt(source))) {
-
-                    configure.defaultLayout = ''
-
-                    torx.renderView(source, {}, function (error, html) {
-                        if (error) {
-                            console.log(error)
-                        } else {
-                            fs.writeFile(build, html, function (err) {
-                                if (err) return console.log(err)
-                                console.log('Build successful', build)
-                            })
-                        }
-                    })
-                } else {
-                    console.error(`Source file '${source}' does not exist.`)
-                }
-            } else if (process.argv[2]) {
                 let argument = process.argv[2]
+
                 if (argument == '-v' || argument == '--version') {
+
                     console.log('torx@' + require('./package.json').version)
+
                 } else {
-                    console.error(`Unknown command '${argument}'. \nAcceptable commands are -v, --version, and [source-file] [build-file].`)
+
+                    let source = getFileWithExt(process.argv[2])
+                    let build = false
+
+                    if (process.argv[3]) {
+                        build = process.argv[3];
+                    } else {
+                        if (!source.match('.html')) {
+                            build = source.replace('.torx', '.html')
+                        } else {
+                            console.log('An output file is required when using .html as a source.')
+                        }
+                    }
+
+                    if (fs.existsSync(source) && build) {
+
+                        configure.defaultLayout = ''
+                        // configure.debug = true
+
+                        torx.renderView(source, {}, function (error, html) {
+                            if (error) {
+                                console.log(error)
+                            } else {
+                                fs.writeFile(build, html, function (err) {
+                                    if (err) return console.log(err)
+                                    console.log('Build successful', build)
+                                })
+                            }
+                        })
+
+                    } else {
+                        console.error(`Source file '${source}' does not exist.`)
+                    }
                 }
+
             } else {
-                console.log('A source file and an output file are required.');
+                console.log('A source file or argument is required.');
             }
         }
     }

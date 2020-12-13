@@ -8,9 +8,12 @@
 		"type": "git",
 		"url": "git+https://github.com/slulego/torx.git"
 	},
-	"main": "torx.js",
+	"main": "index.js",
 	"bin": {
-		"torx": "torx.js"
+		"torx": "index.js"
+	},
+	"scripts": {
+		"test": "node test"
 	},
 	"keywords": [
 		"template",
