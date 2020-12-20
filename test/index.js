@@ -62,11 +62,11 @@ var tests = [
         '<span>JOHNNY APPLESEED)</span>',
         '<span>@upperCase("Johnny Appleseed)")</span>',
         { upperCase: function (string) { return string.toUpperCase() } }),
-    
-    
+
+
     compare('Function with unmatched quotes',
         `<span>JOHNNY'S APPLESEED</span>`,
-        `<span>@html.raw(upperCase('Johnny\\\'s Appleseed'))</span>`,
+        "<span>@html.raw(upperCase('Johnny\\'s Appleseed'))</span>",
         { upperCase: function (string) { return string.toUpperCase() } }),
 
     compare('Array',
@@ -87,6 +87,16 @@ var tests = [
                 return function (length) {
                     return name.substring(0, length)
                 }
+            }
+        }),
+
+    compare('Sub variables',
+        '<span>Johnny</span>',
+        '<span>@fullName.firstName</span>',
+        {
+            fullName: {
+                firstName: 'Johnny',
+                lastName: 'Appleseed'
             }
         })
 
