@@ -75,16 +75,25 @@ Loop everything:
 }
 ```
 ## Comments
-Multiline comment:
+Torx comments are removed by the server before the template is rendered:
 
 ```html
 @* This is a server-side comment. *@
 ```
 
-Single line comment:
+JavaScript variables work as expected:
+
 ```html
-@// This is also a server-side comment.
+<ul>
+	@for (var key in array) {
+		var item = array[key]
+		//array.pop()
+
+		<li>@item</li>
+	}
+</ul>
 ```
+
 ## Passing Variables
 
 Easily send variables from Node and Express:
@@ -107,17 +116,40 @@ app.set('views', './views')
 app.set('view engine', 'torx')
 
 app.get('/', function (req, res) {
-    res.render('index', { title: "Page Title" })
-})
+		torx.renderView('views/pages/index',
+		{ title: 'Homepage' },
+		function (error, html) {
+            if (error) {
+                res.writeHead(500, { 'Content-Type': 'text/html' })
+                res.end(error.stack)
+            } else {
+                res.writeHead(200, { 'Content-Type': 'text/html' })
+                res.end(html)
+            }
+        })
+    })
 
 var port = 3000;
 app.listen(port, () => console.log('Listening on http://localhost:' + port))
 ```
 
 ## Command Line
+Basic usage:
+
 ```
 torx [source.torx] [build.html]
 ```
+
+If the build file is omitted, a `.html` file is created with the original file name.
+
+The `.torx` file extension is not required:
+```
+torx index
+```
+The command will create a `index.html` file in the same folder.
+
+Check current version with `torx -v` or `torx --version`
+
 # Example
 
 Create a `.torx` file:
@@ -125,6 +157,7 @@ Create a `.torx` file:
 ```html
 @{
     var pages = ["Home", "About", "Contact"];
+	var title = "Home";
 }
 
 <html>
@@ -136,11 +169,12 @@ Create a `.torx` file:
 		<a href="@href">@label</a>
 	}
 
-	@// This is a list of links.
+	@* This is a list of links. *@
 	<ul>
-		@for (index in pages) {
+		@for (key in pages) {
+			var page = pages[key]
 			<li @if (pages[index] === 'Home') { style="color: blue;" }>
-				@link(pages[index], pages[index].toLowerCase())
+				@link(page, page.toLowerCase())
 			</li>
 		}
 	</ul>

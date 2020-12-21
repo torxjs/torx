@@ -6,8 +6,6 @@
  * MIT Licensed
  */
 
-const { lookup } = require('dns');
-
 !function () {
     var isNode = typeof window === 'undefined',
         isProd = false,
@@ -42,31 +40,31 @@ const { lookup } = require('dns');
 
     /**
      * Read state enum.
-     * @type {{client: number, server: number}}
+     * @type {{CLIENT: number, SERVER: number}}
      */
 
-    var stateEnum = {
+    const stateEnum = {
         //Frontend code.
-        client: 0,
+        CLIENT: 0,
 
         //Backend code.
-        server: 1
+        SERVER: 1
     };
 
     /**
      * String type enum.
-     * @type {{markup: number, expression: number, script: number}}
+     * @type {{MARKUP: number, EXPRESSION: number, SCRIPT: number}}
      */
 
-    var modeEnum = {
+    const modeEnum = {
         //HTML markup.
-        markup: 0,
+        MARKUP: 0,
 
         //JavaScript expression.
-        expression: 1,
+        EXPRESSION: 1,
 
         //Block JavaScript code.
-        script: 2
+        SCRIPT: 2
     };
 
     /**
@@ -81,110 +79,132 @@ const { lookup } = require('dns');
 
     /**
      * '{' type enum.
-     * @type {{noAt: number, atIf: number, atFor: number, atWhile: number, atDo: number, atSwitch: number, atTry: number, atOther: number}}
+     * @type {{NONE: number, IF: number, FOR: number, WHILE: number, DO: number, SWITCH: number, TRY: number, OTHER: number}}
      */
 
-    var bracesEnum = {
+    const bracesEnum = {
         //Without '@'.
-        noAt: 0,
+        NONE: 0,
 
         //@if Special: maybe follows else if and else in the end.
-        atIf: 1,
+        IF: 1,
 
         //@for
-        atFor: 2,
+        FOR: 2,
 
         //@while
-        atWhile: 3,
+        WHILE: 3,
 
         //@do Special: maybe follows while in the end.
-        atDo: 4,
+        DO: 4,
 
         //@switch
-        atSwitch: 5,
+        SWITCH: 5,
 
         //@try Special: maybe follows catch and finally in the end.
-        atTry: 6,
+        TRY: 6,
 
         //@{...}
-        atOther: 10
+        OTHER: 10
     };
 
-    /**
-     * Custom error.
-     * @param {string} message
-     * @param stack
-     * @constructor
-     */
-
-    function TorxError(message, stack) {
-        this.name = 'TorxError';
-        this.message = message;
-        this.stack = stack;
+    class TorxError {
+        /**
+         * Custom error.
+         * @param {string} message
+         * @param {string} stack
+         * @constructor
+         */
+        constructor(message, stack) {
+            this.name = 'TorxError';
+            this.message = message;
+            this.stack = stack;
+        }
     }
 
     TorxError.prototype = Object.create(Error.prototype);
-    TorxError.prototype.constructor = TorxError;
 
     /**
-     * Get file name with extension.
-     * @param {string} url
+     * Add .torx file extension if ommitted.
+     * @param {string} filePath
      * @returns {string}
      */
 
-    function getFileWithExt(url) {
-        if (!url.match(/\.\w*$/)) {
-            url += '.torx';
+    function getFileWithExt(filePath) {
+        if (!filePath.match(/\.\w*$/)) {
+            filePath += '.torx';
         }
-        return url;
+        return filePath;
     }
 
-    /**
-     * Parse processor.
-     * @param {string} source
-     * @constructor
-     */
 
-    var ParseProcessor = function (source) {
-        //To be parsed template source string.
-        this.source = source;
+    class Position {
+        /**
+         * Position
+         * @param {number} row
+         * @param {number} column
+         * @param {array} source
+         */
+        constructor(row, column, source) {
+            this.row = row;
+            this.column = column;
+            this.source = source;
+        }
+    }
 
-        //Current parsed position of source.
-        this.position = 0;
+    class ParseProcessor {
+        /**
+         * Parse processor.
+         * @param {string} source
+         */
+        constructor(source) {
+            //To be parsed template source string.
+            this.source = source;
 
-        //Current read state, server or client.
-        this.state = stateEnum.client;
+            //Current parsed position of source.
+            this.position = 0;
 
-        //Counter for tags, rule: if '<' push, if '</' pop.
-        this.tags = [];
+            //Current read state, server or client.
+            this.state = stateEnum.CLIENT;
 
-        //Counter for quotes.
-        this.quotes = [];
+            //Counter for tags, rule: if '<' push, if '</' pop.
+            this.tags = [];
 
-        //Counter for braces.
-        this.braces = [];
+            //Counter for quotes.
+            this.quotes = [];
 
-        //Counter for brackets.
-        this.brackets = [];
-    };
+            //Counter for braces.
+            this.braces = [];
 
-    ParseProcessor.prototype = {
+            //Counter for brackets.
+            this.brackets = [];
+        }
+
+        /**
+         * Self-closing tags type.
+         */
+
+        selfClosedTags = ['br', 'hr', 'img', 'input', 'link', 'meta', 'area', 'base', 'col', 'command', 'embed', 'keygen', 'param', 'source', 'track', 'wbr', 'line', 'polyline', 'ellipse', 'rect', 'path']
 
         /**
          * Get the line number for the position.
-         * @returns {{row: Number, col: *, source: Array}}
+         * @param {number} position
+         * @returns {Position}
          */
 
-        getLineNum: function (position) {
+        getLineNum(position) {
+
             if (position === undefined) {
                 position = this.position;
             }
+
             var lines = this.source.substring(0, position).split(/\r?\n/),
                 row = lines.length,
                 col = lines.pop().length + 1,
                 allLines = this.source.split(/\r?\n/),
                 source = [];
-            for (var i = -2; i < 2; i++) {
+
+            for (var i = -3; i < 2; i++) {
                 if (allLines[row + i]) {
                     source.push({
                         row: row + i + 1,
@@ -192,23 +212,35 @@ const { lookup } = require('dns');
                     })
                 }
             }
-            return {
-                row: row,
-                col: col,
-                source: source
-            }
-        },
+
+            return new Position(row, col, source);
+        }
+
+        // /**
+        //  * Get the full line of code
+        //  * @param {number} line 
+        //  */
+        // getLine(line) {
+
+        // }
 
         /**
          * Get the stack.
          * @param {string} message
-         * @param position
+         * @param {Position} position
          * @returns {string}
          */
 
-        getStackString: function (message, position) {
-            return 'Torx Syntax Error: ' + message + ' at position ' + position.row + ':' + position.col;
-        },
+        getStackString(message, position) {
+
+            let lines = ''
+
+            for (const line of position.source) {
+                lines += '</br>' + line.row + ': ' + innerHelper.escapeHtml(line.code)
+            }
+
+            return 'Torx Syntax Error: ' + message + '\tat (' + position.row + ':' + position.column + ')' + lines;
+        }
 
         /**
          * Read text from current position.
@@ -216,7 +248,7 @@ const { lookup } = require('dns');
          * @returns {string}
          */
 
-        readNextChars: function (length) {
+        readNextChars(length) {
             var result = '';
             if (length) {
                 result = this.source.substr(this.position, length);
@@ -224,7 +256,7 @@ const { lookup } = require('dns');
                 result = this.source.substr(this.position);
             }
             return result;
-        },
+        }
 
         /**
          * Read previous text form last position.
@@ -232,7 +264,7 @@ const { lookup } = require('dns');
          * @returns {string}
          */
 
-        readPrevChars: function (length) {
+        readPrevChars(length) {
             var result = '';
             if (length) {
                 result = this.source.slice(this.position - length, this.position);
@@ -240,24 +272,19 @@ const { lookup } = require('dns');
                 result = this.source.substr(0, this.position);
             }
             return result;
-        },
-
-        /**
-         * Self-closing tags type.
-         */
-
-        selfClosedTags: ['br', 'hr', 'img', 'input', 'link', 'meta', 'area', 'base', 'col', 'command', 'embed', 'keygen', 'param', 'source', 'track', 'wbr', 'line', 'polyline', 'ellipse', 'rect', 'path'],
+        }
 
         /**
          * Read client markup.
          * @returns {*}
          */
 
-        readMarkup: function () {
+        readMarkup() {
             var len = this.source.length,
                 char,
                 matched,
                 result = '';
+
             if (this.position >= len) {
                 return undefined;
             }
@@ -300,19 +327,22 @@ const { lookup } = require('dns');
             }
 
             //Ready to switch to backend read mode.
-            this.state = stateEnum.server;
+            this.state = stateEnum.SERVER;
             return result;
-        },
+        }
 
         /**
          * Read inline code.
          * @returns {*}
          */
 
-        readLineServerCode: function () {
+        readLineServerCode() {
             var len = this.source.length,
                 char,
-                result = '';
+                result = '',
+                braces = [],
+                brackets = [],
+                quotes = [];
 
             if (this.position >= len) {
                 return undefined;
@@ -325,17 +355,17 @@ const { lookup } = require('dns');
 
                 //Handle quotes.
                 if (char === '"' || char === "'") {
-                    if (this.readPrevChars(1) !== '\\' && (this.brackets.length > 0 || this.braces.length > 0)) {
-                        if (this.quotes.length === 0) {
-                            this.quotes.push({
+                    if (this.readPrevChars(1) !== '\\' && (brackets.length > 0 || braces.length > 0)) {
+                        if (quotes.length === 0) {
+                            quotes.push({
                                 type: char === '"' ? quotesEnum.doubleQuotes : quotesEnum.singleQuotes,
                                 position: this.position
                             });
-                        } else if (this.quotes.length > 0) {
-                            if (char === '"' && this.quotes[0].type === quotesEnum.doubleQuotes) {
-                                this.quotes.pop();
-                            } else if (char === "'" && this.quotes[0].type === quotesEnum.singleQuotes) {
-                                this.quotes.pop();
+                        } else if (quotes.length > 0) {
+                            if (char === '"' && quotes[0].type === quotesEnum.doubleQuotes) {
+                                quotes.pop();
+                            } else if (char === "'" && quotes[0].type === quotesEnum.singleQuotes) {
+                                quotes.pop();
                             }
                         }
                     } else {
@@ -343,22 +373,21 @@ const { lookup } = require('dns');
                     }
                 }
 
-                // If not in quotes
-                if (this.quotes.length === 0) {
-
-                    // Handle brackets () and braces []
+                // If not inside quotes
+                if (quotes.length === 0) {
+                    
                     switch (char) {
                         case '(':
-                            this.brackets.push(this.position);
+                            brackets.push(this.position);
                             break;
 
                         case ')':
-                            if (this.brackets.length > 0) {
-                                this.brackets.pop()
+                            if (brackets.length > 0) {
+                                brackets.pop()
                             } else {
                                 break expression;
                             }
-                            if (this.brackets.length === 0 && [').', ')[', ')('].indexOf(this.readNextChars(2)) === -1) {
+                            if (brackets.length === 0 && [').', ')[', ')('].indexOf(this.readNextChars(2)) === -1) {
                                 result += char
                                 this.position++
                                 break expression
@@ -366,26 +395,23 @@ const { lookup } = require('dns');
                             break;
 
                         case '[':
-                            this.braces.push(this.position)
+                            braces.push(this.position)
                             break;
 
                         case ']':
-                            if (this.braces.length > 0) {
-                                this.braces.pop()
+                            if (braces.length > 0) {
+                                braces.pop()
                             }
-                            if (this.braces.length === 0 && ['].', '][', ']('].indexOf(this.readNextChars(2)) === -1) {
+                            if (braces.length === 0 && ['].', '][', ']('].indexOf(this.readNextChars(2)) === -1) {
                                 result += char
                                 this.position++
                                 break expression
                             }
                             break;
-                        default:
-
-                            break;
                     }
 
                     // If not a word or . or inside () or []
-                    if (char.match(/[\w\.\[\]\(\)]/) === null && this.brackets.length === 0 && this.braces.length === 0) {
+                    if (char.match(/[\w\.\[\]\(\)]/) === null && brackets.length === 0 && braces.length === 0) {
                         break expression
                     }
                 }
@@ -393,34 +419,34 @@ const { lookup } = require('dns');
                 result += char;
             }
 
-            this.quotes = []
-            this.braces = []
-            this.brackets = []
+            // console.log(result)
 
             //Ready to switch to frontend read mode.
-            this.state = stateEnum.client;
+            this.state = stateEnum.CLIENT;
 
             return result;
-        },
+        }
 
         /**
          * Read backend block scripts.
          * @returns {*}
          */
 
-        readBlockServerCode: function () {
+        readBlockServerCode() {
             var len = this.source.length,
                 char,
                 braceState,
                 matched,
                 result = '';
+
             if (this.position >= len) {
                 return undefined;
             }
+
             for (; this.position < len; this.position++) {
                 char = this.readNextChars(1);
                 if (char === configure.symbol) {
-                    let errorMessage = 'In a script block, write scripts without prefix ' + configure.symbol;
+                    let errorMessage = 'In a script block, write JavaScript without ' + configure.symbol;
                     throw new TorxError(errorMessage, this.getStackString(errorMessage, this.getLineNum(this.position)));
                 }
                 //Handle quotes.
@@ -454,36 +480,36 @@ const { lookup } = require('dns');
 
                 if (char === '{' && this.quotes.length === 0) {
                     this.braces.push({
-                        type: this.readPrevChars(1) === configure.symbol ? bracesEnum.atOther : bracesEnum.noAt,
+                        type: this.readPrevChars(1) === configure.symbol ? bracesEnum.OTHER : bracesEnum.NONE,
                         position: this.position
                     });
                 } else if (char === '}' && this.quotes.length === 0) {
                     braceState = this.braces.pop();
                     //If the '}' matched '{' has prefix @.
                     if (braceState.type > 0) {
-                        if (braceState.type === bracesEnum.atIf && (/(?:^}\s*?else\s*?\{)|(?:^}\s*?else\s+if\s*?\([\s\S]+?\)\s*?\{)/.test(this.readNextChars()))) {
+                        if (braceState.type === bracesEnum.IF && (/(?:^}\s*?else\s*?\{)|(?:^}\s*?else\s+if\s*?\([\s\S]+?\)\s*?\{)/.test(this.readNextChars()))) {
                             //If it is 'else' behind '}', that's backend scripts, and handles braces.
                             matched = this.readNextChars().match(/(?:^}\s*?else\s*?\{)|(?:^}\s*?else\s+if\s*?\([\s\S]+?\)\s*?\{)/);
                             result += matched[0];
                             this.position += matched[0].length - 1;
                             this.braces.push({
-                                type: bracesEnum.atIf,
+                                type: bracesEnum.IF,
                                 position: this.position
                             });
                             continue;
-                        } else if (braceState.type === bracesEnum.atDo && (/^}\s*?while\s*?\([\s\S]+?\)/.test(this.readNextChars()))) {
+                        } else if (braceState.type === bracesEnum.DO && (/^}\s*?while\s*?\([\s\S]+?\)/.test(this.readNextChars()))) {
                             //If it is 'while' behind '}', that's backend scripts.
                             matched = this.readNextChars().match(/^}\s*?while\s*?\([\s\S]+?\)/);
                             result += matched[0];
                             this.position += matched[0].length - 1;
                             continue;
-                        } else if (braceState.type === bracesEnum.atTry && (/(?:^}\s*?catch\([\s\S]+?\)\s*?\{)|(?:^}\s*?finally\s*?\{)/.test(this.readNextChars()))) {
+                        } else if (braceState.type === bracesEnum.TRY && (/(?:^}\s*?catch\([\s\S]+?\)\s*?\{)|(?:^}\s*?finally\s*?\{)/.test(this.readNextChars()))) {
                             //If it is 'catch' or 'finally', that's backend scripts, and handles braces.
                             matched = this.readNextChars().match(/(?:^}\s*?catch\([\s\S]+?\)\s*?\{)|(?:^}\s*?finally\s*?\{)/);
                             result += matched[0];
                             this.position += matched[0].length - 1;
                             this.braces.push({
-                                type: bracesEnum.atTry,
+                                type: bracesEnum.TRY,
                                 position: this.position
                             });
                             continue;
@@ -498,16 +524,16 @@ const { lookup } = require('dns');
                 result += char;
             }
             //Ready to switch to frontend read mode.
-            this.state = stateEnum.client;
+            this.state = stateEnum.CLIENT;
             return result;
-        },
+        }
 
         /**
          * Read scripts in @()
          * @returns {*}
          */
 
-        readBracketCode: function () {
+        readBracketCode() {
             var flag = 0,
                 result = '',
                 char = '';
@@ -525,7 +551,7 @@ const { lookup } = require('dns');
                 }
                 this.position++;
             }
-            this.state = stateEnum.client;
+            this.state = stateEnum.CLIENT;
             this.position++;
             if (flag !== 0) {
                 let errorMessage = '"(" is missing the closing ")"';
@@ -533,18 +559,13 @@ const { lookup } = require('dns');
             }
             return result;
         }
-    };
+    }
 
-    /**
-     * Content processor.
-     * @constructor
-     */
+    class ContentProcessor {
 
-    var ContentProcessor = function () {
-        this.segments = [];
-    };
-
-    ContentProcessor.prototype = {
+        constructor() {
+            this.segments = [];
+        }
 
         /**
          * ncode special characters.
@@ -552,17 +573,17 @@ const { lookup } = require('dns');
          * @returns {string|XML}
          */
 
-        escape: function (text) {
+        escape(text) {
             return text.replace(/\\/g, '\\\\').replace(/"/g, '\\"').replace(/\r/g, '\\r').replace(/\n/g, '\\n');
 
-        },
+        }
 
         /**
          * Add segment to array.
          * @param {object} obj
          */
 
-        addSegment: function (obj) {
+        addSegment(obj) {
             if (obj.data) {
                 switch (obj.type) {
                     case 0:
@@ -576,17 +597,17 @@ const { lookup } = require('dns');
                         break;
                 }
             }
-        },
+        }
 
         /**
          * Get scripts string.
          * @returns {string}
          */
 
-        getContent: function () {
+        getContent() {
             return this.segments.join('\r\n');
         }
-    };
+    }
 
     var innerHelper = {
 
@@ -661,17 +682,17 @@ const { lookup } = require('dns');
 
         /**
          * Render a partial view.
-         * @param {string} url
+         * @param {string} filePath
          * @param {object} data
          * @returns {*}
          */
 
-        renderPartialFn: function (url, data) {
-            url = getFileWithExt(url);
-            url = path.join(configure.partialViewDir, url);
-            var partialTemp = torx.getView(url);
+        renderPartialFn: function (filePath, data) {
+            filePath = getFileWithExt(filePath);
+            filePath = path.join(configure.partialViewDir, filePath);
+            var partialTemp = torx.getView(filePath);
             try {
-                var html = torx.compile(partialTemp, url).call({
+                var html = torx.compile(partialTemp, filePath).call({
                     layout: null
                 }, data);
             } catch (err) {
@@ -695,11 +716,11 @@ const { lookup } = require('dns');
             contentProcessor = new ContentProcessor();
 
         while (processor.position < processor.source.length) {
-            if (processor.state === stateEnum.client) {
+            if (processor.state === stateEnum.CLIENT) {
                 code = processor.readMarkup();
                 contentProcessor.addSegment({
                     data: code,
-                    type: modeEnum.markup
+                    type: modeEnum.MARKUP
                 });
             } else {
                 nextChar = processor.readNextChars(1);
@@ -710,10 +731,10 @@ const { lookup } = require('dns');
                     //@@
                     if (nextChar === configure.symbol) {
                         processor.position++;
-                        processor.state = stateEnum.client;
+                        processor.state = stateEnum.CLIENT;
                         contentProcessor.addSegment({
                             data: configure.symbol,
-                            type: modeEnum.markup
+                            type: modeEnum.MARKUP
                         });
                     }
                     //@//...
@@ -727,7 +748,7 @@ const { lookup } = require('dns');
                         if (new RegExp('\\*[\\s\\S]*?\\*' + configure.symbol).test(processor.readNextChars())) {
                             matchedText = processor.readNextChars().match(new RegExp('\\*[\\s\\S]*?\\*' + configure.symbol))[0];
                             processor.position += matchedText.length;
-                            processor.state = stateEnum.client;
+                            processor.state = stateEnum.CLIENT;
                         } else {
                             let errorMessage = 'Comments ' + configure.symbol + '* is missing the closing *' + configure.symbol;
                             throw new TorxError(errorMessage, processor.getStackString(errorMessage, processor.getLineNum(processor.position)));
@@ -741,7 +762,7 @@ const { lookup } = require('dns');
                         }
                         contentProcessor.addSegment({
                             data: code,
-                            type: modeEnum.expression
+                            type: modeEnum.EXPRESSION
                         });
                     }
                     //@{...}
@@ -749,7 +770,7 @@ const { lookup } = require('dns');
                         code = processor.readBlockServerCode();
                         contentProcessor.addSegment({
                             data: code,
-                            type: modeEnum.script
+                            type: modeEnum.SCRIPT
                         });
                     }
                     //@if(){...}
@@ -757,13 +778,13 @@ const { lookup } = require('dns');
                         matchedText = processor.readNextChars().match(/^if\s*?\([\s\S]+?\)\s*\{/)[0];
                         processor.position += matchedText.length;
                         processor.braces.push({
-                            type: bracesEnum.atIf,
+                            type: bracesEnum.IF,
                             position: processor.position
                         });
                         code = processor.readBlockServerCode();
                         contentProcessor.addSegment({
                             data: matchedText + code,
-                            type: modeEnum.script
+                            type: modeEnum.SCRIPT
                         });
                     }
                     //@for(){...}
@@ -771,13 +792,13 @@ const { lookup } = require('dns');
                         matchedText = processor.readNextChars().match(/^for\s*?\([\s\S]+?\)\s*\{/)[0];
                         processor.position += matchedText.length;
                         processor.braces.push({
-                            type: bracesEnum.atFor,
+                            type: bracesEnum.FOR,
                             position: processor.position
                         });
                         code = processor.readBlockServerCode();
                         contentProcessor.addSegment({
                             data: matchedText + code,
-                            type: modeEnum.script
+                            type: modeEnum.SCRIPT
                         });
                     }
                     //@while(){...}
@@ -785,13 +806,13 @@ const { lookup } = require('dns');
                         matchedText = processor.readNextChars().match(/^while\s*?\([\s\S]+?\)\s*\{/)[0];
                         processor.position += matchedText.length;
                         processor.braces.push({
-                            type: bracesEnum.atWhile,
+                            type: bracesEnum.WHILE,
                             position: processor.position
                         });
                         code = processor.readBlockServerCode();
                         contentProcessor.addSegment({
                             data: matchedText + code,
-                            type: modeEnum.script
+                            type: modeEnum.SCRIPT
                         });
                     }
                     //@do{}
@@ -799,13 +820,13 @@ const { lookup } = require('dns');
                         matchedText = processor.readNextChars().match(/^do\s*?\{/)[0];
                         processor.position += matchedText.length;
                         processor.braces.push({
-                            type: bracesEnum.atDo,
+                            type: bracesEnum.DO,
                             position: processor.position
                         });
                         code = processor.readBlockServerCode();
                         contentProcessor.addSegment({
                             data: matchedText + code,
-                            type: modeEnum.script
+                            type: modeEnum.SCRIPT
                         });
                     }
                     //@switch(){...}
@@ -813,13 +834,13 @@ const { lookup } = require('dns');
                         matchedText = processor.readNextChars().match(/^switch\s*?\([\s\S]+?\)\s*\{/)[0];
                         processor.position += matchedText.length;
                         processor.braces.push({
-                            type: bracesEnum.atSwitch,
+                            type: bracesEnum.SWITCH,
                             position: processor.position
                         });
                         code = processor.readBlockServerCode();
                         contentProcessor.addSegment({
                             data: matchedText + code,
-                            type: modeEnum.script
+                            type: modeEnum.SCRIPT
                         });
                     }
                     //@try{}
@@ -827,13 +848,13 @@ const { lookup } = require('dns');
                         matchedText = processor.readNextChars().match(/^try\s*?\{/)[0];
                         processor.position += matchedText.length;
                         processor.braces.push({
-                            type: bracesEnum.atTry,
+                            type: bracesEnum.TRY,
                             position: processor.position
                         });
                         code = processor.readBlockServerCode();
                         contentProcessor.addSegment({
                             data: matchedText + code,
-                            type: modeEnum.script
+                            type: modeEnum.SCRIPT
                         });
                     }
                     //@abc, @_a, @[1,2], @!true
@@ -841,7 +862,7 @@ const { lookup } = require('dns');
                         code = processor.readLineServerCode();
                         contentProcessor.addSegment({
                             data: code,
-                            type: modeEnum.expression
+                            type: modeEnum.EXPRESSION
                         });
                     }
                     //@ abc, @", @? and other special characters.
@@ -853,7 +874,7 @@ const { lookup } = require('dns');
                     code = processor.readBlockServerCode();
                     contentProcessor.addSegment({
                         data: code,
-                        type: modeEnum.script
+                        type: modeEnum.SCRIPT
                     });
                 }
             }
@@ -891,14 +912,14 @@ const { lookup } = require('dns');
 
         /**
          * Get view file according to the file path.
-         * @param url
-         * @param callback
+         * @param {string} filePath - file path
+         * @param {function} callback
          */
 
-        getView: function (url, callback) {
-            url = getFileWithExt(url);
+        getView: function (filePath, callback) {
+            filePath = getFileWithExt(filePath);
             if (callback) {
-                fs.readFile(url, function (err, data) {
+                fs.readFile(filePath, function (err, data) {
                     if (err) {
                         callback(err);
                     } else {
@@ -907,7 +928,7 @@ const { lookup } = require('dns');
                 })
             } else {
                 try {
-                    var data = fs.readFileSync(url);
+                    var data = fs.readFileSync(filePath);
                 } catch (err) {
                     throw err;
                 }
@@ -1011,7 +1032,7 @@ const { lookup } = require('dns');
                             html = new Function('data', fn).call(thisObj, data);
                         } catch (err) {
                             return callback(new TorxError(err.message,
-                                err.stack + (filePath ? ('\n    at template file (' + getFileWithExt(filePath) + ')') : '')));
+                                err.stack + (filePath ? ('\n\tat template file (' + getFileWithExt(filePath) + ')') : '')));
                         }
                         //Filter <text> tags.
                         html = html.replace(/<text>([\s\S]*?)<\/text>/g, function (a, b) {
@@ -1081,7 +1102,7 @@ const { lookup } = require('dns');
                     try {
                         html = new Function('data', fn).call(thisObj, data);
                     } catch (err) {
-                        throw new TorxError(err.message, err.stack + (filePath ? ('\n    at template file (' + getFileWithExt(filePath) + ')') : ''));
+                        throw new TorxError(err.message, err.stack + (filePath ? ('\n\tat (' + getFileWithExt(filePath) + ')') : ''));
                     }
                     html = html.replace(/<text>([\s\S]*?)<\/text>/g, function (a, b) {
                         return b;
