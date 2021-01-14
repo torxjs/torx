@@ -1,6 +1,6 @@
 {
 	"name": "torx",
-	"version": "0.2.0",
+	"version": "0.2.1",
 	"description": "JavaScript template engine based on Razor syntax.",
 	"author": "slulego, sky",
 	"license": "MIT",
@@ -17,16 +17,15 @@
 	},
 	"keywords": [
 		"template",
-		"view",
-		"nodejs",
+		"engine",
+		"views",
 		"torx",
 		"express",
-		"node",
 		"js",
 		"html"
 	],
 	"bugs": {
 		"url": "https://github.com/slulego/torx/issues"
 	},
-	"homepage": "https://github.com/slulego/torx"
+	"homepage": "https://github.com/slulego/torx/wiki"
 }

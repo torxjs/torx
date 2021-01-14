@@ -1,3 +1,8 @@
+# 0.2.1
+13 Jan 2020
+
+- Fixed some self-closing tags throwing an error.
+
 # 0.2.0
 20 Dec 2020
 
