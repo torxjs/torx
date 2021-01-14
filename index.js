@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 /**
- * Created by Slulego 2020
+ * Torx created by Slulego 2020-2021
  * Forked from Saker by Sky
  * MIT Licensed
  */
@@ -181,12 +181,6 @@
         }
 
         /**
-         * Self-closing tags type.
-         */
-
-        selfClosedTags = ['br', 'hr', 'img', 'input', 'link', 'meta', 'area', 'base', 'col', 'command', 'embed', 'keygen', 'param', 'source', 'track', 'wbr', 'line', 'polyline', 'ellipse', 'rect', 'path']
-
-        /**
          * Get the line number for the position.
          * @param {number} position
          * @returns {Position}
@@ -215,14 +209,6 @@
 
             return new Position(row, col, source);
         }
-
-        // /**
-        //  * Get the full line of code
-        //  * @param {number} line 
-        //  */
-        // getLine(line) {
-
-        // }
 
         /**
          * Get the stack.
@@ -306,7 +292,7 @@
                 //Meet '>' and there is a start tag.
                 if (char === '>' && this.tags.length > 0) {
                     //...</div> , <img >
-                    if (new RegExp('<(\\\\)?\/' + this.tags[this.tags.length - 1].type + '\\s*>$').test(this.readPrevChars() + char) || this.selfClosedTags.indexOf(this.tags[this.tags.length - 1].type) > -1) {
+                    if (new RegExp('<(\\\\)?\/' + this.tags[this.tags.length - 1].type + '\\s*>$').test(this.readPrevChars() + char) || this.readPrevChars(1) == '/') {
                         this.tags.pop();
                         result += char;
                         if ((this.tags[this.tags.length - 1] || { position: -1 }).position >= (this.braces[this.braces.length - 1] || { position: -1 }).position) {
@@ -375,7 +361,7 @@
 
                 // If not inside quotes
                 if (quotes.length === 0) {
-                    
+
                     switch (char) {
                         case '(':
                             brackets.push(this.position);
