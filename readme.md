@@ -60,7 +60,7 @@ Loop everything:
 
 ```html
 @while (counter > 3) {
-	@{ counter++; }
+	counter++
 	<a>@counter</a>
 }
 ```
@@ -92,13 +92,6 @@ JavaScript variables work as expected:
 		<li>@item</li>
 	}
 </ul>
-```
-
-## Passing Variables
-
-Easily send variables from Node and Express:
-```js
-res.render('index', { title: 'Page Title' })
 ```
 
 # Build
