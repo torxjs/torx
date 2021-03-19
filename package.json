@@ -1,7 +1,7 @@
 {
 	"name": "torx",
 	"version": "0.2.1",
-	"description": "JavaScript template engine based on Razor syntax.",
+	"description": "Generate files with JavaScript.",
 	"author": "slulego, sky",
 	"license": "MIT",
 	"repository": {

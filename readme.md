@@ -1,7 +1,8 @@
 # Torx
 
-JavaScript template engine based on Razor syntax.
+Generate files with JavaScript.
 
+## Quick Links
 
 [Package](https://www.npmjs.com/package/torx) on NPM
 
@@ -9,7 +10,7 @@ JavaScript template engine based on Razor syntax.
 
 [Extension](https://marketplace.visualstudio.com/items?itemName=Slulego.torx) for Visual Studio Code
 
-
+# Syntax
 ## Code Blocks
 
 Write server-side JavaScript inside HTML using a code block:
