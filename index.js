@@ -137,7 +137,6 @@
         return filePath;
     }
 
-
     class Position {
         /**
          * Position
