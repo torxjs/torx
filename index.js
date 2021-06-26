@@ -374,7 +374,7 @@
 
                 // If not inside quotes
                 if (quotes.length === 0) {
-                    
+
                     switch (char) {
                         case '(':
                             brackets.push(this.position);
@@ -897,6 +897,27 @@
     var torx = {
 
         /**
+         * Render Torx file
+         * @param {string} filename
+         * @param {object} data
+         * @returns {string}
+         */
+        renderFile: function (filename, data) {
+            let output = '';
+            let _filename = getFileWithExt(filename);
+            try {
+                file = fs.readFileSync(_filename, 'utf8');
+                configure.defaultLayout = ''
+                output = torx.compile(file)(data);
+            } catch (error) {
+                console.error(error);
+            }
+            return output;
+        },
+
+        // LEGACY
+
+        /**
          * Combine config object.
          * @param passObj
          */
@@ -1151,34 +1172,34 @@
          * @param {function} callback
          */
 
-        renderView: function (url, data, callback) {
+        // renderFile: function (url, data, callback) {
 
-            var cb = function (err, html) {
-                if (err) {
-                    return callback(err);
-                }
-                return callback(null, html);
-            }
+        //     var cb = function (err, html) {
+        //         if (err) {
+        //             return callback(err);
+        //         }
+        //         return callback(null, html);
+        //     }
 
-            if (cache[url] && isProd) {
-                cache[url](data, cb)
-            } else {
-                torx.getView(url, function (err, template) {
-                    if (err) {
-                        return callback(err);
-                    }
-                    try {
-                        var compiled = torx.compile(template, url);
-                    } catch (err) {
-                        return callback(err);
-                    }
-                    if (isProd) {
-                        cache[url] = compiled;
-                    }
-                    compiled(data, cb);
-                })
-            }
-        },
+        //     if (cache[url] && isProd) {
+        //         cache[url](data, cb)
+        //     } else {
+        //         torx.getView(url, function (err, template) {
+        //             if (err) {
+        //                 return callback(err);
+        //             }
+        //             try {
+        //                 var compiled = torx.compile(template, url);
+        //             } catch (err) {
+        //                 return callback(err);
+        //             }
+        //             if (isProd) {
+        //                 cache[url] = compiled;
+        //             }
+        //             compiled(data, cb);
+        //         })
+        //     }
+        // },
 
         /**
          * Generate HTML without a layout.
@@ -1258,7 +1279,7 @@
                         configure.defaultLayout = ''
                         // configure.debug = true
 
-                        torx.renderView(source, {}, function (error, html) {
+                        torx.renderFile(source, {}, function (error, html) {
                             if (error) {
                                 console.log(error)
                             } else {

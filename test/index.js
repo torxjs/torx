@@ -4,7 +4,7 @@
 
 'use strict';
 
-const torx = require('../')
+const torx = require('..')
 
 // torx.config({ debug: false })
 
