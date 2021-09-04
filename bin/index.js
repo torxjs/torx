@@ -1,5 +1,7 @@
 #!/usr/bin/env node
-var fs = require('fs');
+"use strict";
+exports.__esModule = true;
+var fs = require("fs");
 var args = process.argv.slice(2);
 if (args[0]) {
     switch (args[0]) {
@@ -23,19 +25,29 @@ else {
     logError('At least source file or argument is required.');
 }
 function compileFile(src, out) {
+    var sourcePath;
     var sourceName = src;
     var sourceExtension = 'torx';
-    var outFileName = out;
+    var outPath = out;
     var matchFileName = /(?<name>.*)\.(?<extension>.*)/.exec(src);
     if (matchFileName) {
         sourceName = matchFileName.groups.name;
         sourceExtension = matchFileName.groups.extension;
     }
     if (!out.includes('.')) {
-        outFileName = sourceName + "." + out;
+        outPath = sourceName + "." + out;
     }
-    console.log("src " + sourceName + "." + sourceExtension);
-    console.log("out " + outFileName);
+    sourcePath = sourceName + "." + sourceExtension;
+    if (fs.existsSync(sourcePath)) {
+        fs.writeFile(outPath, 'TODO', function (error) {
+            if (!error) {
+                console.log('BUILD:', outPath);
+            }
+            else {
+                console.log(error);
+            }
+        });
+    }
 }
 function logError(message) {
     console.log('ERROR:', message);

@@ -1,10 +1,8 @@
 {
     "compilerOptions": {
-        "module": "commonjs",
-        "noImplicitAny": true,
-        "removeComments": true,
-        "preserveConstEnums": true,
+        "module": "CommonJS",
         "outDir": "bin",
-        "rootDir": "src"
+        "rootDir": "src",
+        "removeComments": true
     }
 }

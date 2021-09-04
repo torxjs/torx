@@ -5,10 +5,14 @@
 Create a torx file named `index.torx`
 
 The src is the torx file path. The file extension can be ommitted.
+
 The out can either be a file extension or a full path.
+
 ```
-torx src out
+torx <src> <out>
 ```
+
+---
 
 The simpliest way: `torx <src> <extension>`
 
