@@ -5,6 +5,7 @@
  */
 
 import * as fs from 'fs';
+import * as torx from './torx';
 
 const args = process.argv.slice(2)
 
@@ -19,7 +20,11 @@ if (args[0]) {
             break;
         default:
             if (args[1]) {
-                compileFile(args[0], args[1]);
+                compileFile(args[0], args[1]).then(path => {
+                    console.log('BUILD:', path);
+                }).catch(error =>
+                    logError(error)
+                );
             } else {
                 logError(`Unknown command "${args[0]}".`);
             }
@@ -29,33 +34,38 @@ if (args[0]) {
     logError('At least source file or argument is required.');
 }
 
-function compileFile(src: string, out: string): void {
-    let sourcePath;
-    let sourceName = src;
-    let sourceExtension = 'torx';
-    let outPath = out;
+function compileFile(src: string, out: string): Promise<string> {
+    return new Promise((resolve, reject) => {
+        let sourcePath;
+        let sourceName = src;
+        let sourceExtension = 'torx';
+        let outPath = out;
 
-    const matchFileName = /(?<name>.*)\.(?<extension>.*)/.exec(src);
-    if (matchFileName) {
-        sourceName = matchFileName.groups.name;
-        sourceExtension = matchFileName.groups.extension;
-    }
+        const matchFileName = /(?<name>.*)\.(?<extension>.*)/.exec(src);
+        if (matchFileName) {
+            sourceName = matchFileName.groups.name;
+            sourceExtension = matchFileName.groups.extension;
+        }
 
-    if (!out.includes('.')) {
-        outPath = `${sourceName}.${out}`;
-    }
+        if (!out.includes('.')) {
+            outPath = `${sourceName}.${out}`;
+        }
 
-    sourcePath = `${sourceName}.${sourceExtension}`;
+        sourcePath = `${sourceName}.${sourceExtension}`;
 
-    if (fs.existsSync(sourcePath)) {
-        fs.writeFile(outPath, 'TODO', error => {
-            if(!error) {
-                console.log('BUILD:', outPath);
-            } else {
-                console.log(error);
-            }
+        torx.compile('hello').then(out => {
+            console.log(out); // DEV
         });
-    }
+        if (fs.existsSync(sourcePath)) {
+            // fs.writeFile(outPath, 'TODO', error => {
+            //     if (!error) {
+            //         resolve(outPath);
+            //     } else {
+            //         reject(error);
+            //     }
+            // });
+        }
+    });
 }
 
 function logError(message: string): void {

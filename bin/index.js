@@ -2,6 +2,7 @@
 "use strict";
 exports.__esModule = true;
 var fs = require("fs");
+var torx = require("./torx");
 var args = process.argv.slice(2);
 if (args[0]) {
     switch (args[0]) {
@@ -13,7 +14,11 @@ if (args[0]) {
             break;
         default:
             if (args[1]) {
-                compileFile(args[0], args[1]);
+                compileFile(args[0], args[1]).then(function (path) {
+                    console.log('BUILD:', path);
+                })["catch"](function (error) {
+                    return logError(error);
+                });
             }
             else {
                 logError("Unknown command \"" + args[0] + "\".");
@@ -25,29 +30,26 @@ else {
     logError('At least source file or argument is required.');
 }
 function compileFile(src, out) {
-    var sourcePath;
-    var sourceName = src;
-    var sourceExtension = 'torx';
-    var outPath = out;
-    var matchFileName = /(?<name>.*)\.(?<extension>.*)/.exec(src);
-    if (matchFileName) {
-        sourceName = matchFileName.groups.name;
-        sourceExtension = matchFileName.groups.extension;
-    }
-    if (!out.includes('.')) {
-        outPath = sourceName + "." + out;
-    }
-    sourcePath = sourceName + "." + sourceExtension;
-    if (fs.existsSync(sourcePath)) {
-        fs.writeFile(outPath, 'TODO', function (error) {
-            if (!error) {
-                console.log('BUILD:', outPath);
-            }
-            else {
-                console.log(error);
-            }
+    return new Promise(function (resolve, reject) {
+        var sourcePath;
+        var sourceName = src;
+        var sourceExtension = 'torx';
+        var outPath = out;
+        var matchFileName = /(?<name>.*)\.(?<extension>.*)/.exec(src);
+        if (matchFileName) {
+            sourceName = matchFileName.groups.name;
+            sourceExtension = matchFileName.groups.extension;
+        }
+        if (!out.includes('.')) {
+            outPath = sourceName + "." + out;
+        }
+        sourcePath = sourceName + "." + sourceExtension;
+        torx.compile('hello').then(function (out) {
+            console.log(out);
         });
-    }
+        if (fs.existsSync(sourcePath)) {
+        }
+    });
 }
 function logError(message) {
     console.log('ERROR:', message);
