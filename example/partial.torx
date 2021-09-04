@@ -1,0 +1,5 @@
+@function strong(text) {
+    <strong>@text</strong>
+}
+
+@strong('This is a partial file')

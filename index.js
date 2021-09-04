@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 /**
- * Created by Slulego 2020
+ * Created by Stephen Ullom (Slulego) 2020-2021
  * Forked from Saker by Sky
  * MIT Licensed
  */
@@ -1172,34 +1172,34 @@
          * @param {function} callback
          */
 
-        // renderFile: function (url, data, callback) {
+        renderFile: function (url, data, callback) {
 
-        //     var cb = function (err, html) {
-        //         if (err) {
-        //             return callback(err);
-        //         }
-        //         return callback(null, html);
-        //     }
+            var cb = function (err, html) {
+                if (err) {
+                    return callback(err);
+                }
+                return callback(null, html);
+            }
 
-        //     if (cache[url] && isProd) {
-        //         cache[url](data, cb)
-        //     } else {
-        //         torx.getView(url, function (err, template) {
-        //             if (err) {
-        //                 return callback(err);
-        //             }
-        //             try {
-        //                 var compiled = torx.compile(template, url);
-        //             } catch (err) {
-        //                 return callback(err);
-        //             }
-        //             if (isProd) {
-        //                 cache[url] = compiled;
-        //             }
-        //             compiled(data, cb);
-        //         })
-        //     }
-        // },
+            if (cache[url] && isProd) {
+                cache[url](data, cb)
+            } else {
+                torx.getView(url, function (err, template) {
+                    if (err) {
+                        return callback(err);
+                    }
+                    try {
+                        var compiled = torx.compile(template, url);
+                    } catch (err) {
+                        return callback(err);
+                    }
+                    if (isProd) {
+                        cache[url] = compiled;
+                    }
+                    compiled(data, cb);
+                })
+            }
+        },
 
         /**
          * Generate HTML without a layout.
