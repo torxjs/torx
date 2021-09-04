@@ -1,31 +1,8 @@
 {
-	"name": "torx",
-	"version": "0.2.1",
-	"description": "Generate files with JavaScript.",
-	"author": "stephen-ullom, slulego, sky",
-	"license": "MIT",
-	"repository": {
-		"type": "git",
-		"url": "git+https://github.com/slulego/torx.git"
-	},
-	"main": "index.js",
-	"bin": {
-		"torx": "index.js"
-	},
 	"scripts": {
 		"test": "node test"
 	},
-	"keywords": [
-		"template",
-		"engine",
-		"views",
-		"torx",
-		"express",
-		"js",
-		"html"
-	],
-	"bugs": {
-		"url": "https://github.com/slulego/torx/issues"
-	},
-	"homepage": "https://github.com/slulego/torx/wiki"
+	"devDependencies": {
+		"@types/node": "^16.7.10"
+	}
 }
