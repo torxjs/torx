@@ -2,24 +2,27 @@
 	"name": "torx",
 	"version": "1.0",
 	"description": "The universal JavaScript template engine.",
-	"author": "stephen-ullom",
+	"author": {
+		"name": "Stephen Ullom",
+		"url": "http://stephenullom.com"
+	},
+	"homepage": "https://github.com/stephen-ullom/torx/wiki",
 	"repository": {
 		"type": "git",
 		"url": "git+https://github.com/stephen-ullom/torx.git"
 	},
+	"bugs": {
+		"url": "https://github.com/stephen-ullom/torx/issues"
+	},
+	"keywords": [
+		"torx",
+		"template",
+		"javascript"
+	],
 	"main": "bin/index.js",
 	"bin": {
 		"torx": "bin/index.js"
 	},
-	"keywords": [
-		"torx",
-		"templates",
-		"javascript"
-	],
-	"bugs": {
-		"url": "https://github.com/stephen-ullom/torx/issues"
-	},
-	"homepage": "https://github.com/stephen-ullom/torx/wiki",
 	"scripts": {
 		"test": "node test"
 	},
