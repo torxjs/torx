@@ -1,4 +1,25 @@
 {
+	"name": "torx",
+	"version": "1.0",
+	"description": "The universal JavaScript template engine.",
+	"author": "stephen-ullom",
+	"repository": {
+		"type": "git",
+		"url": "git+https://github.com/stephen-ullom/torx.git"
+	},
+	"main": "bin/index.js",
+	"bin": {
+		"torx": "bin/index.js"
+	},
+	"keywords": [
+		"torx",
+		"templates",
+		"javascript"
+	],
+	"bugs": {
+		"url": "https://github.com/stephen-ullom/torx/issues"
+	},
+	"homepage": "https://github.com/stephen-ullom/torx/wiki",
 	"scripts": {
 		"test": "node test"
 	},
