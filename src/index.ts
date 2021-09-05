@@ -53,7 +53,16 @@ function compileFile(src: string, out: string): Promise<string> {
 
         sourcePath = `${sourceName}.${sourceExtension}`;
 
-        torx.compile('hello').then(out => {
+        torx.compile(`
+            <html>
+                <h1>@title</h1>
+                <p>@(2 + 2)</p>
+                <p>person@@mail.com</p>
+            </html>
+        `, {
+            title: 'Hello Title',
+            list: ['one', 'two', 'three']
+        }).then(out => {
             console.log(out); // DEV
         });
         if (fs.existsSync(sourcePath)) {
