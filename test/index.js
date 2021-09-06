@@ -6,9 +6,9 @@
 
 const torx = require('../bin/torx')
 
-var successful = 0
-var failed = 0
-var tests = [
+let successful = 0;
+let failed = 0;
+const tests = [
 
     compare('Implicit only',
         'Johnny Appleseed',
@@ -98,7 +98,7 @@ var tests = [
             }
         })
 
-]
+];
 
 /**
  * Log the expected result and the actual result.
@@ -109,27 +109,25 @@ var tests = [
  * @return {boolean}
  */
 function compare(caption, expected, script, data) {
-
-    let indent = '  '
-
+    const indent = '  ';
     try {
         torx.compile(script, data).then(output => {
             if (output === expected) {
-                console.log('\x1b[32m%s\x1b[0m', caption)
-                console.log(indent + script + '\n')
+                console.log('\x1b[32m%s\x1b[0m', caption);
+                console.log(indent + script + '\n');
             } else {
-                console.log('\x1b[31m%s\x1b[0m', caption)
-                console.log(indent + 'Script:   ', script)
-                console.log(indent + 'Output:   ', output)
-                console.log(indent + 'Expected: ', expected + '\n')
+                console.log('\x1b[31m%s\x1b[0m', caption);
+                console.log(indent + 'Script:   ', script);
+                console.log(indent + 'Output:   ', output);
+                console.log(indent + 'Expected: ', expected + '\n');
             }
             result(output === expected);
         }).catch(error => console.log(error));
     } catch (error) {
-        console.log('\x1b[31m%s\x1b[0m', caption)
-        console.log(indent + script)
-        console.log(indent + error + '\n')
-        result(false)
+        console.log('\x1b[31m%s\x1b[0m', caption);
+        console.log(indent + script);
+        console.log(indent + error + '\n');
+        result(false);
     }
 }
 
@@ -138,21 +136,18 @@ function compare(caption, expected, script, data) {
  * @param {boolean} success 
  */
 function result(success) {
-
     if (success) {
-        successful++
+        successful++;
     } else {
-        failed++
+        failed++;
     }
-
-    let total = successful + failed
-
+    const total = successful + failed;
     if (typeof tests != 'undefined') {
         if (total === tests.length) {
             if (failed === 0) {
-                console.log('\x1b[32m%s\x1b[0m', successful + '/' + total + ' tests successful.\n')
+                console.log('\x1b[32m%s\x1b[0m', successful + '/' + total + ' tests successful.\n');
             } else {
-                console.log('\x1b[31m%s\x1b[0m', failed + '/' + total + ' tests failed.\n')
+                console.log('\x1b[31m%s\x1b[0m', failed + '/' + total + ' tests failed.\n');
             }
         }
     }

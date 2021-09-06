@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 /**
- * Created by Stephen Ullom 2021
+ * Created by Stephen Ullom 9/5/2021
  */
 
 import * as fs from 'fs';
@@ -17,8 +17,12 @@ if (args[0]) {
         case '--version':
             console.log('torx@' + require('../package.json').version)
             break;
+        case '-h':
         case '--help':
-            // TODO: show commands
+            console.log('\nUsage: torx [options] [path] [ext]');
+            console.log('\nOptions: ');
+            console.log('  -v, --version   print torx version');
+            console.log('  -h, --help      command line options\n');
             break;
         default:
             if (args[1]) {

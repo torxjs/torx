@@ -1,30 +1,34 @@
 import { TorxError } from "./shared";
 import * as ts from "typescript";
-import { resolveCaa } from "dns";
 
 export function compile(source: string, data: object): Promise<string> {
     return new Promise<string>((resolve, reject) => {
-        const page = new File(source, data);
+        const page = new TorxFile(source, data);
         page.getScript().then(script => {
-            let input = `var __output__ = ''; function print(text) { __output__ += text; return text; } print(`;
+            let input = '';
+            Object.keys(data).forEach(key => {
+                const json = JSON.stringify(data[key]);
+                input += `var ${key} = ${json ? json : data[key]}; `;
+            });
+            input += `var __output__ = ''; function print(text) { __output__ += text; return text; } print(`;
             input += script;
             input += '); return __output__;';
             const js = ts.transpile(input);
-            console.log(input); // DEV
+            console.log(input + '\n\n-----\n'); // DEV
             const torx = new Function(js);
             resolve(torx());
         }).catch(error => {
             if (error instanceof TorxError) {
                 reject(error);
             } else {
-                reject(new TorxError(error));
+                reject(error);
             }
         });
     })
 
 }
 
-class File {
+class TorxFile {
 
     public text: string;
     public data: object;
@@ -44,16 +48,6 @@ class File {
         });
     }
 
-}
-
-class Pair {
-    public open: string;
-    public close: string;
-
-    constructor(pair: string) {
-        this.open = pair[0];
-        this.close = pair[1];
-    }
 }
 
 function getScript(text: string): string {
@@ -121,10 +115,10 @@ function getScript(text: string): string {
                         } else {
                             const variable = getVariable(text.substring(index + word.length));
                             if (variable) {
-                                output += '` + (' + word + variable + ' || ``) + `';
+                                output += '` + (' + word + variable + ' || \'\') + `';
                                 index += word.length + variable.length;
                             } else {
-                                output += '` + (' + word + ' || ``) + `';
+                                output += '` + (' + word + ' || \'\') + `';
                                 index += word.length;
                             }
                         }
@@ -148,11 +142,11 @@ function getScript(text: string): string {
  * @param {string} text - detects .word, () or []
  */
 function getVariable(text: string): string {
-    const nextChar = text.charAt(0);
-    if (['(', '['].indexOf(nextChar) >= 0) {
+    const firstChar = text.charAt(0);
+    if (['(', '['].indexOf(firstChar) >= 0) {
         const pair = getMatchingPair(text);
-        return pair + getVariable(text.substring(pair.length + 1));
-    } else if (nextChar === '.') {
+        return pair + getVariable(text.substring(pair.length));
+    } else if (firstChar === '.') {
         const word = text.substring(1).match(/\w+/)[0];
         return '.' + word + getVariable(text.substring(word.length + 1));
     } else {
@@ -165,9 +159,18 @@ function getVariable(text: string): string {
  */
 function getMatchingPair(text: string): string {
     const pairs = [
-        new Pair('()'),
-        new Pair('{}'),
-        new Pair('[]')
+        {
+            open: '(',
+            close: ')'
+        },
+        {
+            open: '{',
+            close: '}'
+        },
+        {
+            open: '[',
+            close: ']'
+        }
     ];
     if (text.length > 0) {
         const pair = pairs.find(p => p.open === text[0]);

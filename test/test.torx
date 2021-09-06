@@ -1,11 +1,14 @@
 @{
     const title: string = 'Hello!';
     const obj = {
-        array: ['a', 'b', 'c'],
+        array: ['abc', '123'],
         child: {
             name: 'child-name'
         }
     }
+    const imageUrl2 = function () {
+        return 'image/default2.png'
+    };
 }
 <html>
     @function button(label: string, className?: string) {
@@ -15,8 +18,10 @@
     <p>@(2 + 2)</p>
     <p>@('Here is a super long (string) \' with a "bunch of \( strange \) things.`')</p>
     <p>person@@mail.com</p>
-    @button('BIG BUTTON')
+    <section>@button('BIG BUTTON')</section>
     <div>
-        @obj.array[1]
+        @obj.array[1][2]
+        @obj.child.name
     </div>
+    <div class="image" style="background-image: url(@imageUrl2())"></div>
 </html>
