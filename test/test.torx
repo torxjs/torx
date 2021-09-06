@@ -1,12 +1,22 @@
 @{
     const title: string = 'Hello!';
+    const obj = {
+        array: ['a', 'b', 'c'],
+        child: {
+            name: 'child-name'
+        }
+    }
 }
 <html>
-    @function button(label: string, class: string) {
-        <button class="@class">@label</button>
+    @function button(label: string, className?: string) {
+        <button class="@className">@label</button>
     }
     <h1>@title</h1>
     <p>@(2 + 2)</p>
     <p>@('Here is a super long (string) \' with a "bunch of \( strange \) things.`')</p>
     <p>person@@mail.com</p>
+    @button('BIG BUTTON')
+    <div>
+        @obj.array[1]
+    </div>
 </html>

@@ -7,13 +7,23 @@ export class TorxError {
 
     constructor(message: string, columnNumber?: number, lineNumber?: number, fileName?: string) {
         this.message = message;
-        this.fileName = fileName;
-        this.lineNumber = lineNumber;
         this.columnNumber = columnNumber;
+        this.lineNumber = lineNumber;
+        this.fileName = fileName;
     }
 
     public log() {
-        console.log(`TorxError: ${this.message} at ${this.fileName}:${this.lineNumber}:${this.columnNumber}`);
+        let output = `TorxError: ${this.message}`;
+        if (this.fileName) {
+            output += ' at ' + this.fileName;
+            if (this.lineNumber) {
+                output += ':' + this.lineNumber;
+                if (this.columnNumber) {
+                    output += ':' + this.columnNumber;
+                }
+            }
+        }
+        console.log(output);
     }
 
     public setLineNumber(lineNumber: number): TorxError {

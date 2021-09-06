@@ -1,167 +1,49 @@
 import { TorxError } from "./shared";
+import * as ts from "typescript";
+import { resolveCaa } from "dns";
 
 export function compile(source: string, data: object): Promise<string> {
-    const page = new File(source, data);
-    return page.getOutput();
+    return new Promise<string>((resolve, reject) => {
+        const page = new File(source, data);
+        page.getScript().then(script => {
+            let input = `var __output__ = ''; function print(text) { __output__ += text; return text; } print(`;
+            input += script;
+            input += '); return __output__;';
+            const js = ts.transpile(input);
+            console.log(input); // DEV
+            const torx = new Function(js);
+            resolve(torx());
+        }).catch(error => {
+            if (error instanceof TorxError) {
+                reject(error);
+            } else {
+                reject(new TorxError(error));
+            }
+        });
+    })
+
 }
 
 class File {
 
     public text: string;
     public data: object;
-    // public sourceLines: Line[];
 
     constructor(text: string, data: object) {
         this.text = text;
         this.data = data;
-        // this.sourceLines = text.split('\n').map(text => new Line(text));
     }
 
-    public getOutput(): Promise<string> {
+    public getScript(): Promise<string> {
         return new Promise((resolve, reject) => {
-            let symbolPos = this.text.indexOf('@');
-            if (symbolPos >= 0) {
-                let output = 'print(`' + this.text.substring(0, symbolPos);
-                let index = symbolPos;
-                do {
-                    index++;
-                    switch (this.text.charAt(index)) {
-                        case '@':
-                            output += '@';
-                            index++;
-                            break;
-                        case '(':
-                            const groupPair = getMatchingPair(this.text.substring(index));
-                            if (groupPair) {
-                                output += '` + ' + groupPair.substring(1, groupPair.length - 1) + ' + `';
-                                index += groupPair.length;
-                            } else {
-                                reject(new TorxError(`Missing closing )`, index));
-                            }
-                            break;
-                        case '{':
-                            const bracketPair = getMatchingPair(this.text.substring(index));
-                            if (bracketPair) {
-                                output += '`);' + bracketPair.substring(1, bracketPair.length - 1) + 'print(`';
-                                index += bracketPair.length;
-                            } else {
-                                reject(new TorxError(`Missing closing }`, index));
-                            }
-                            break;
-                        default:
-                            const match = this.text.substring(index).match(/^\w+/);
-                            if (match) {
-                                const word = match[0];
-                                if(['function', 'for', 'if'].indexOf(word) >= 0) {
-                                    // TODO skip first () group
-                                    const openBracketIndex = this.text.indexOf('{', index);
-                                    if (openBracketIndex >= 0) {
-                                        const controlText = this.text.substring(index, openBracketIndex);
-                                        output += '`);' + controlText;
-                                        index += controlText.length + 1;
-                                        const bracketPair = getMatchingPair(this.text.substring(openBracketIndex));
-                                        if (bracketPair) {
-                                            // TODO compile inside brackets
-                                            output += '{ print(`' + bracketPair.substring(1, bracketPair.length - 1) + '`); } print(`';
-                                            index += bracketPair.length;
-                                        } else {
-                                            reject(new TorxError(`Could not find closing }`, index));
-                                        }
-                                    } else {
-                                        reject(new TorxError(`Expecting {`, index));
-                                    }
-                                } else {
-                                    output += '` + ' + word + ' + `';
-                                    index += word.length;
-                                }
-                            }
-                            break;
-                    }
-                    symbolPos = this.text.indexOf('@', index);
-                    if (symbolPos >= 0) {
-                        output += `${this.text.substring(index, symbolPos)}`;
-                        index = this.text.indexOf('@', symbolPos);
-                    }
-                } while (symbolPos >= 0);
-                output += this.text.substring(index) + '`);';
-                resolve(output);
-            } else {
-                resolve(this.text);
-            }
-            // Promise.all(this.sourceLines.map((line, index) => {
-            //     return new Promise((resolve, reject) => {
-            //         line.getOutput().then(out =>
-            //             resolve(out)
-            //         ).catch((error: TorxError) => 
-            //             reject(error.setLineNumber(index + 1))
-            //         );
-            //     });
-            // })).then(output => {
-            //     resolve(output.join('\n'));
-            // }).catch(error => {
-            //     reject(error)
-            // });
-        });
-    }
-
-}
-
-class Line {
-
-    public text: string;
-
-    constructor(text: string) {
-        this.text = text;
-    }
-
-    public getOutput(): Promise<string> {
-        return new Promise((resolve, reject) => {
-            if (this.text.indexOf('@') >= 0) {
-                let index = this.text.indexOf('@');
-                let output = `print('${this.text.substring(0, index)}`;
-                while (this.text.indexOf('@', index) >= 0) {
-                    index++;
-                    switch (this.text[index]) {
-                        case '@':
-                            output += '@';
-                            index++;
-                            break;
-                        case '(':
-                            const groupPair = getMatchingPair(this.text.substring(index));
-                            if (groupPair) {
-                                output += `' + ${groupPair.substring(1, groupPair.length - 1)} + '`;
-                                index += groupPair.length + 1;
-                            } else {
-                                reject(new TorxError(`Could not find matching pair for (`, index));
-                            }
-                            break;
-                        case '{':
-                            // const bracketPair = getMatchingPair(this.text.substring(index));
-                            // if (bracketPair) {
-                            //     output += `' + ${bracketPair.substring(1, bracketPair.length - 1)} + '`;
-                            //     index += bracketPair.length + 1;
-                            // } else {
-                            //     reject(new TorxError(`Could not find matching pair for {`, index));
-                            // }
-                            break;
-                        default:
-                            const match = this.text.substring(index).match(/^\w+/);
-                            if (match) {
-                                const word = match[0];
-                                console.log(word); // DEV
-                                output += `' + ${word} + '`;
-                                index += word.length;
-                            }
-                            break;
-                    }
-                }
-                output += `${this.text.substring(index)}');`;
-                resolve(output);
-            } else {
-                resolve(`print('${this.text}');`);
+            try {
+                resolve(getScript(this.text));
+            } catch (error) {
+                reject(error);
             }
         });
     }
+
 }
 
 class Pair {
@@ -174,10 +56,113 @@ class Pair {
     }
 }
 
+function getScript(text: string): string {
+    let symbolPos = text.indexOf('@');
+    if (symbolPos >= 0) {
+        let output = '`' + text.substring(0, symbolPos);
+        let index = symbolPos;
+        do {
+            index++;
+            switch (text.charAt(index)) {
+                case '@':
+                    output += '@';
+                    index++;
+                    break;
+                case '(':
+                    const groupPair = getMatchingPair(text.substring(index));
+                    if (groupPair) {
+                        output += '` + ' + groupPair + ' + `';
+                        index += groupPair.length;
+                    } else {
+                        throw new TorxError(`Missing closing )`, index);
+                    }
+                    break;
+                case '{':
+                    const bracketPair = getMatchingPair(text.substring(index));
+                    if (bracketPair) {
+                        output += '`);' + bracketPair.substring(1, bracketPair.length - 1) + 'print(`';
+                        index += bracketPair.length;
+                        if (text.charAt(index) === '\n') {
+                            index++;
+                        }
+                    } else {
+                        throw new TorxError(`Missing closing }`, index);
+                    }
+                    break;
+                default:
+                    const match = text.substring(index).match(/^\w+/);
+                    if (match) {
+                        const word = match[0];
+                        if (['function', 'for', 'if', 'while'].indexOf(word) >= 0) {
+                            // TODO: skip first (params) group
+                            const openBracketIndex = text.indexOf('{', index);
+                            if (openBracketIndex >= 0) {
+                                const controlText = text.substring(index, openBracketIndex);
+                                output += '`);' + controlText;
+                                index += controlText.length + 1;
+                                const bracketPair = getMatchingPair(text.substring(openBracketIndex));
+                                if (bracketPair) {
+                                    const script = getScript(bracketPair.substring(1, bracketPair.length - 1));
+                                    if (word === 'function') {
+                                        output += '{ return ' + script + '; } print(`';
+                                    } else {
+                                        output += '{ return ' + script + ' } print(`';
+                                    }
+                                    index += bracketPair.length;
+                                    if (text.charAt(index) === '\n') {
+                                        index++;
+                                    }
+                                } else {
+                                    throw new TorxError(`Could not find closing }`, index);
+                                }
+                            } else {
+                                throw new TorxError(`Expecting {`, index);
+                            }
+                        } else {
+                            const variable = getVariable(text.substring(index + word.length));
+                            if (variable) {
+                                output += '` + (' + word + variable + ' || ``) + `';
+                                index += word.length + variable.length;
+                            } else {
+                                output += '` + (' + word + ' || ``) + `';
+                                index += word.length;
+                            }
+                        }
+                    }
+                    break;
+            }
+            symbolPos = text.indexOf('@', index);
+            if (symbolPos >= 0) {
+                output += `${text.substring(index, symbolPos)}`;
+                index = text.indexOf('@', symbolPos);
+            }
+        } while (symbolPos >= 0);
+        output += text.substring(index) + '`';
+        return output;
+    } else {
+        return text;
+    }
+}
+
+/**
+ * @param {string} text - detects .word, () or []
+ */
+function getVariable(text: string): string {
+    const nextChar = text.charAt(0);
+    if (['(', '['].indexOf(nextChar) >= 0) {
+        const pair = getMatchingPair(text);
+        return pair + getVariable(text.substring(pair.length + 1));
+    } else if (nextChar === '.') {
+        const word = text.substring(1).match(/\w+/)[0];
+        return '.' + word + getVariable(text.substring(word.length + 1));
+    } else {
+        return '';
+    }
+}
+
 /**
  * @param {string} text - should begin with (, { or [
  */
-
 function getMatchingPair(text: string): string {
     const pairs = [
         new Pair('()'),

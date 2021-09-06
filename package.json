@@ -29,5 +29,8 @@
 	},
 	"devDependencies": {
 		"@types/node": "^16.7.10"
+	},
+	"dependencies": {
+		"typescript": "^4.4.2"
 	}
 }
