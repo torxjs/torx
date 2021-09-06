@@ -24,6 +24,7 @@
 		"torx": "bin/index.js"
 	},
 	"scripts": {
+		"start": "node bin test/test html",
 		"test": "node test"
 	},
 	"devDependencies": {

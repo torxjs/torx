@@ -1,10 +1,12 @@
 /**
- * Created by Stephen Ullom 12/13/2020
+ * Created by Slulego 12.13.2020
  */
 
 'use strict';
 
-const torx = require('../bin/torx')
+const torx = require('..')
+
+// torx.config({ debug: false })
 
 var successful = 0
 var failed = 0
@@ -108,23 +110,30 @@ var tests = [
  * @param {object} data
  * @return {boolean}
  */
+
 function compare(caption, expected, script, data) {
 
     let indent = '  '
 
     try {
-        torx.compile(script, data).then(output => {
-            if (output === expected) {
-                console.log('\x1b[32m%s\x1b[0m', caption)
-                console.log(indent + script + '\n')
-            } else {
-                console.log('\x1b[31m%s\x1b[0m', caption)
-                console.log(indent + 'Script:   ', script)
-                console.log(indent + 'Output:   ', output)
-                console.log(indent + 'Expected: ', expected + '\n')
-            }
-            result(output === expected);
-        }).catch(error => console.log(error));
+        torx.compile(script).call(
+            { layout: null },
+            data,
+            function (error, output) {
+                // if (error) console.log(error)
+
+                if (output === expected) {
+                    console.log('\x1b[32m%s\x1b[0m', caption)
+                    console.log(indent + script + '\n')
+                } else {
+                    console.log('\x1b[31m%s\x1b[0m', caption)
+                    console.log(indent + 'Script:   ', script)
+                    console.log(indent + 'Output:   ', output)
+                    console.log(indent + 'Expected: ', expected + '\n')
+                }
+
+                result(output === expected)
+            })
     } catch (error) {
         console.log('\x1b[31m%s\x1b[0m', caption)
         console.log(indent + script)
@@ -137,6 +146,7 @@ function compare(caption, expected, script, data) {
  * Tally results.
  * @param {boolean} success 
  */
+
 function result(success) {
 
     if (success) {

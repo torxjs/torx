@@ -7,13 +7,15 @@
 import * as fs from 'fs';
 import * as torx from './torx';
 
+import { TorxError } from './shared';
+
 const args = process.argv.slice(2)
 
 if (args[0]) {
     switch (args[0]) {
         case '-v':
         case '--version':
-            console.log('torx@' + require('./package.json').version)
+            console.log('torx@' + require('../package.json').version)
             break;
         case '--help':
             // TODO: show commands
@@ -22,16 +24,16 @@ if (args[0]) {
             if (args[1]) {
                 compileFile(args[0], args[1]).then(path => {
                     console.log('BUILD:', path);
-                }).catch(error =>
-                    logError(error)
-                );
+                }).catch((error: TorxError) => {
+                    return error.log();
+                });
             } else {
-                logError(`Unknown command "${args[0]}".`);
+                console.log(`ERROR: Unknown command "${args[0]}".`);
             }
             break;
     }
 } else {
-    logError('At least source file or argument is required.');
+    console.log('ERROR: At least source file or argument is required.');
 }
 
 function compileFile(src: string, out: string): Promise<string> {
@@ -53,30 +55,33 @@ function compileFile(src: string, out: string): Promise<string> {
 
         sourcePath = `${sourceName}.${sourceExtension}`;
 
-        torx.compile(`
-            <html>
-                <h1>@title</h1>
-                <p>@(2 + 2)</p>
-                <p>person@@mail.com</p>
-            </html>
-        `, {
-            title: 'Hello Title',
-            list: ['one', 'two', 'three']
-        }).then(out => {
-            console.log(out); // DEV
-        });
         if (fs.existsSync(sourcePath)) {
-            // fs.writeFile(outPath, 'TODO', error => {
-            //     if (!error) {
-            //         resolve(outPath);
-            //     } else {
-            //         reject(error);
-            //     }
-            // });
+
+            fs.readFile(sourcePath, 'utf8', (error, data) => {
+                if (!error) {
+                    torx.compile(data, {
+                        title: 'Hello Title',
+                        list: ['one', 'two', 'three']
+                    }).then(out => {
+                        console.log(out); // DEV
+
+                        // fs.writeFile(outPath, out, error => {
+                        //     if (!error) {
+                        //         resolve(outPath);
+                        //     } else {
+                        //         reject(error);
+                        //     }
+                        // });
+                        resolve(sourcePath);
+                    }).catch((error: TorxError) =>
+                        reject(error.setFileName(sourcePath))
+                    );
+                } else {
+                    reject(error);
+                }
+            });
+        } else {
+            reject(`No file exists at '${sourcePath}'.`);
         }
     });
-}
-
-function logError(message: string): void {
-    console.log('ERROR:', message);
 }

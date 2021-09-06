@@ -1,23 +1,12 @@
-<!DOCTYPE html>
 @{
-    title = 'Test Webpage'
-    imageUrl1 = 'image/default1.png'
-    imageUrl2 = function () {
-        return 'image/default2.png'
-    }
+    const title: string = 'Hello!';
 }
 <html>
-    <head>
-        <title>@title</title>
-        <style>
-            .image {
-                width: 300px;
-                height: 300px;
-            }
-        </style>
-    </head>
-    <body>
-        <div class="image" style="background-image: url(@imageUrl1)"></div>
-        <div class="image" style="background-image: url(@imageUrl2())"></div>
-    </body>
+    @function button(label: string, class: string) {
+        <button class="@class">@label</button>
+    }
+    <h1>@title</h1>
+    <p>@(2 + 2)</p>
+    <p>@('Here is a super long (string) \' with a "bunch of \( strange \) things.`')</p>
+    <p>person@@mail.com</p>
 </html>
