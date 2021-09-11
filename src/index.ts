@@ -67,15 +67,14 @@ function compileFile(src: string, out: string): Promise<string> {
                         title: 'Hello Title',
                         list: ['one', 'two', 'three']
                     }).then(out => {
-                        console.log(out); // DEV
-
-                        // fs.writeFile(outPath, out, error => {
-                        //     if (!error) {
-                        //         resolve(outPath);
-                        //     } else {
-                        //         reject(error);
-                        //     }
-                        // });
+                        // console.log(out); // DEV
+                        fs.writeFile(outPath, out, error => {
+                            if (!error) {
+                                resolve(outPath);
+                            } else {
+                                reject(error);
+                            }
+                        });
                         resolve(sourcePath);
                     }).catch((error: TorxError) =>
                         reject(error.setFileName(sourcePath))

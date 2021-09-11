@@ -55,79 +55,91 @@ function getScript(text: string): string {
     if (symbolPos >= 0) {
         let output = '`' + text.substring(0, symbolPos);
         let index = symbolPos;
+        let commentDepth = 0;
         do {
             index++;
-            switch (text.charAt(index)) {
-                case '@':
-                    output += '@';
-                    index++;
-                    break;
-                case '(':
-                    const groupPair = getMatchingPair(text.substring(index));
-                    if (groupPair) {
-                        output += '` + ' + groupPair + ' + `';
-                        index += groupPair.length;
-                    } else {
-                        throw new TorxError(`Missing closing )`, index);
-                    }
-                    break;
-                case '{':
-                    const bracketPair = getMatchingPair(text.substring(index));
-                    if (bracketPair) {
-                        output += '`);' + bracketPair.substring(1, bracketPair.length - 1) + 'print(`';
-                        index += bracketPair.length;
-                        if (text.charAt(index) === '\n') {
-                            index++;
+            if (text.charAt(index) === '*') {
+                index++;
+                commentDepth++;
+            } else if (commentDepth > 0) {
+                if (text.charAt(index - 1) === '*') {
+                    commentDepth--;
+                }
+            } else {
+                switch (text.charAt(index)) {
+                    case '@':
+                        output += '@';
+                        index++;
+                        break;
+                    case '(':
+                        const groupPair = getMatchingPair(text.substring(index));
+                        if (groupPair) {
+                            output += '` + ' + groupPair + ' + `';
+                            index += groupPair.length;
+                        } else {
+                            throw new TorxError(`Missing closing )`, index);
                         }
-                    } else {
-                        throw new TorxError(`Missing closing }`, index);
-                    }
-                    break;
-                default:
-                    const match = text.substring(index).match(/^\w+/);
-                    if (match) {
-                        const word = match[0];
-                        if (['function', 'for', 'if', 'while'].indexOf(word) >= 0) {
-                            // TODO: skip first (params) group
-                            const openBracketIndex = text.indexOf('{', index);
-                            if (openBracketIndex >= 0) {
-                                const controlText = text.substring(index, openBracketIndex);
-                                output += '`);' + controlText;
-                                index += controlText.length + 1;
-                                const bracketPair = getMatchingPair(text.substring(openBracketIndex));
-                                if (bracketPair) {
-                                    const script = getScript(bracketPair.substring(1, bracketPair.length - 1));
-                                    if (word === 'function') {
-                                        output += '{ return ' + script + '; } print(`';
+                        break;
+                    case '{':
+                        const bracketPair = getMatchingPair(text.substring(index));
+                        if (bracketPair) {
+                            output += '`);' + bracketPair.substring(1, bracketPair.length - 1) + 'print(`';
+                            index += bracketPair.length;
+                            // if (text.charAt(index) === '\n') {
+                            // 	index++;
+                            // }
+                        } else {
+                            throw new TorxError(`Missing closing }`, index);
+                        }
+                        break;
+                    default:
+                        const match = text.substring(index).match(/^\w+/);
+                        if (match) {
+                            const word = match[0];
+                            if (['function', 'for', 'if', 'while'].indexOf(word) >= 0) {
+                                // TODO: skip first (params) group
+                                const openBracketIndex = text.indexOf('{', index);
+                                if (openBracketIndex >= 0) {
+                                    const controlText = text.substring(index, openBracketIndex);
+                                    output += '`);' + controlText;
+                                    index += controlText.length + 1;
+                                    const bracketPair = getMatchingPair(text.substring(openBracketIndex));
+                                    if (bracketPair) {
+                                        const script = getScript(bracketPair.substring(1, bracketPair.length - 1));
+                                        if (word === 'function') {
+                                            output += '{ return ' + script + '; } print(`';
+                                        } else {
+                                            output += '{ print(' + script + '); } print(`';
+                                        }
+                                        index += bracketPair.length;
+                                        // if (text.charAt(index) === '\n') {
+                                        //     index++;
+                                        // }
                                     } else {
-                                        output += '{ return ' + script + ' } print(`';
-                                    }
-                                    index += bracketPair.length;
-                                    if (text.charAt(index) === '\n') {
-                                        index++;
+                                        throw new TorxError(`Could not find closing }`, index);
                                     }
                                 } else {
-                                    throw new TorxError(`Could not find closing }`, index);
+                                    throw new TorxError(`Expecting {`, index);
                                 }
                             } else {
-                                throw new TorxError(`Expecting {`, index);
-                            }
-                        } else {
-                            const variable = getVariable(text.substring(index + word.length));
-                            if (variable) {
-                                output += '` + (' + word + variable + ' || \'\') + `';
-                                index += word.length + variable.length;
-                            } else {
-                                output += '` + (' + word + ' || \'\') + `';
-                                index += word.length;
+                                const variable = getVariable(text.substring(index + word.length));
+                                if (variable) {
+                                    output += '` + (' + word + variable + ' || \'\') + `';
+                                    index += word.length + variable.length;
+                                } else {
+                                    output += '` + (' + word + ' || \'\') + `';
+                                    index += word.length;
+                                }
                             }
                         }
-                    }
-                    break;
+                        break;
+                }
             }
             symbolPos = text.indexOf('@', index);
             if (symbolPos >= 0) {
-                output += `${text.substring(index, symbolPos)}`;
+                if (commentDepth === 0) {
+                    output += `${text.substring(index, symbolPos)}`;
+                }
                 index = text.indexOf('@', symbolPos);
             }
         } while (symbolPos >= 0);
