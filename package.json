@@ -19,12 +19,12 @@
 		"template",
 		"javascript"
 	],
-	"main": "bin/index.js",
+	"main": "./bin/index.js",
 	"bin": {
-		"torx": "bin/index.js"
+		"torx": "./bin/cli.js"
 	},
 	"scripts": {
-		"start": "node bin test/test html",
+		"start": "node ./bin/cli.js test/test html",
 		"test": "node test"
 	},
 	"devDependencies": {

@@ -1,10 +1,14 @@
+
 /**
- * Created by Stephen Ullom 12/13/2020
+ * Created by stephen-ullom 12/13/2020
+ * @file Torx templating engine. {@link http://torxjs.com}
+ * @author Stephen Ullom
+ * @project Torx
  */
 
 'use strict';
 
-const torx = require('../bin/torx')
+const torx = require('../bin')
 
 let successful = 0;
 let failed = 0;

@@ -1,46 +1,31 @@
-#!/usr/bin/env node
 
 /**
- * Created by Stephen Ullom 9/5/2021
+ * Created by stephen-ullom 9/5/2021
+ * @file Torx templating engine. {@link http://torxjs.com}
+ * @author Stephen Ullom
+ * @project Torx
  */
 
+import * as ts from 'typescript';
 import * as fs from 'fs';
-import * as torx from './torx';
 
 import { TorxError } from './shared';
 
-const args = process.argv.slice(2)
-
-if (args[0]) {
-    switch (args[0]) {
-        case '-v':
-        case '--version':
-            console.log('torx@' + require('../package.json').version)
-            break;
-        case '-h':
-        case '--help':
-            console.log('\nUsage: torx [options] [path] [ext]');
-            console.log('\nOptions: ');
-            console.log('  -v, --version   print torx version');
-            console.log('  -h, --help      command line options\n');
-            break;
-        default:
-            if (args[1]) {
-                compileFile(args[0], args[1]).then(path => {
-                    console.log('BUILD:', path);
-                }).catch((error: TorxError) => {
-                    return error.log();
-                });
-            } else {
-                console.log(`ERROR: Unknown command "${args[0]}".`);
-            }
-            break;
-    }
-} else {
-    console.log('ERROR: At least source file or argument is required.');
+export function express(filePath: string, options: any, callback: Function) {
+    fs.readFile(filePath, 'utf8', (error, data) => {
+        if (!error) {
+            compile(data, options).then(out =>
+                callback(null, out)
+            ).catch((error: TorxError) =>
+                callback(error)
+            );
+        } else {
+            callback(error);
+        }
+    });
 }
 
-function compileFile(src: string, out: string): Promise<string> {
+export function compileFile(src: string, out: string): Promise<string> {
     return new Promise((resolve, reject) => {
         let sourcePath;
         let sourceName = src;
@@ -63,7 +48,7 @@ function compileFile(src: string, out: string): Promise<string> {
 
             fs.readFile(sourcePath, 'utf8', (error, data) => {
                 if (!error) {
-                    torx.compile(data, {
+                    compile(data, {
                         title: 'Hello Title',
                         list: ['one', 'two', 'three']
                     }).then(out => {
@@ -87,4 +72,248 @@ function compileFile(src: string, out: string): Promise<string> {
             reject(`No file exists at '${sourcePath}'.`);
         }
     });
+}
+
+export function compile(source: string, data: object): Promise<string> {
+    return new Promise<string>((resolve, reject) => {
+        const page = new TorxFile(source, data);
+        page.getScript().then(script => {
+            let input = '';
+            Object.keys(data).forEach(key => {
+                const json = JSON.stringify(data[key]);
+                input += `var ${key} = ${json ? json : data[key]}; `;
+            });
+            input += `var __output__ = ''; function print(text) { __output__ += text; return text; } print(`;
+            input += script;
+            input += '); return __output__;';
+            const js = ts.transpile(input);
+            // console.log(input + '\n\n-----\n'); // DEV
+            const torx = new Function(js);
+            resolve(torx());
+        }).catch(error => {
+            if (error instanceof TorxError) {
+                reject(error);
+            } else {
+                reject(error);
+            }
+        });
+    })
+
+}
+
+class TorxFile {
+
+    public text: string;
+    public data: object;
+
+    constructor(text: string, data: object) {
+        this.text = text;
+        this.data = data;
+    }
+
+    public getScript(): Promise<string> {
+        return new Promise((resolve, reject) => {
+            try {
+                resolve(getScript(this.text));
+            } catch (error) {
+                reject(error);
+            }
+        });
+    }
+
+}
+
+function getScript(text: string): string {
+    let symbolPos = text.indexOf('@');
+    if (symbolPos >= 0) {
+        let output = '`' + text.substring(0, symbolPos);
+        let index = symbolPos;
+        let commentDepth = 0;
+        do {
+            index++;
+            if (text.charAt(index) === '*') {
+                index++;
+                commentDepth++;
+            } else if (commentDepth > 0) {
+                if (text.charAt(index - 1) === '*') {
+                    commentDepth--;
+                }
+            } else {
+                switch (text.charAt(index)) {
+                    case '@':
+                        output += '@';
+                        index++;
+                        break;
+                    case '(':
+                        const groupPair = getMatchingPair(text.substring(index));
+                        if (groupPair) {
+                            output += '` + ' + groupPair + ' + `';
+                            index += groupPair.length;
+                        } else {
+                            throw new TorxError(`Missing closing )`, index);
+                        }
+                        break;
+                    case '{':
+                        const bracketPair = getMatchingPair(text.substring(index));
+                        if (bracketPair) {
+                            output += '`);' + bracketPair.substring(1, bracketPair.length - 1) + 'print(`';
+                            index += bracketPair.length;
+                            // if (text.charAt(index) === '\n') {
+                            // 	index++;
+                            // }
+                        } else {
+                            throw new TorxError(`Missing closing }`, index);
+                        }
+                        break;
+                    default:
+                        const match = text.substring(index).match(/^\w+/);
+                        if (match) {
+                            const word = match[0];
+                            if (['function', 'for', 'if', 'while'].indexOf(word) >= 0) {
+                                // TODO: skip first (params) group
+                                const openBracketIndex = text.indexOf('{', index);
+                                if (openBracketIndex >= 0) {
+                                    const controlText = text.substring(index, openBracketIndex);
+                                    output += '`);' + controlText;
+                                    index += controlText.length + 1;
+                                    const bracketPair = getMatchingPair(text.substring(openBracketIndex));
+                                    if (bracketPair) {
+                                        const script = getScript(bracketPair.substring(1, bracketPair.length - 1));
+                                        if (word === 'function') {
+                                            output += '{ return ' + script + '; } print(`';
+                                        } else {
+                                            output += '{ print(' + script + '); } print(`';
+                                        }
+                                        index += bracketPair.length;
+                                        // if (text.charAt(index) === '\n') {
+                                        //     index++;
+                                        // }
+                                    } else {
+                                        throw new TorxError(`Could not find closing }`, index);
+                                    }
+                                } else {
+                                    throw new TorxError(`Expecting {`, index);
+                                }
+                            } else {
+                                const variable = getVariable(text.substring(index + word.length));
+                                if (variable) {
+                                    output += '` + (' + word + variable + ' || \'\') + `';
+                                    index += word.length + variable.length;
+                                } else {
+                                    output += '` + (' + word + ' || \'\') + `';
+                                    index += word.length;
+                                }
+                            }
+                        }
+                        break;
+                }
+            }
+            symbolPos = text.indexOf('@', index);
+            if (symbolPos >= 0) {
+                if (commentDepth === 0) {
+                    output += `${text.substring(index, symbolPos)}`;
+                }
+                index = text.indexOf('@', symbolPos);
+            }
+        } while (symbolPos >= 0);
+        output += text.substring(index) + '`';
+        return output;
+    } else {
+        return text;
+    }
+}
+
+/**
+ * @param {string} text - detects .word, () or []
+ */
+function getVariable(text: string): string {
+    const firstChar = text.charAt(0);
+    if (['(', '['].indexOf(firstChar) >= 0) {
+        const pair = getMatchingPair(text);
+        return pair + getVariable(text.substring(pair.length));
+    } else if (firstChar === '.') {
+        const word = text.substring(1).match(/\w+/)[0];
+        return '.' + word + getVariable(text.substring(word.length + 1));
+    } else {
+        return '';
+    }
+}
+
+/**
+ * @param {string} text - should begin with (, { or [
+ */
+function getMatchingPair(text: string): string {
+    const pairs = [
+        {
+            open: '(',
+            close: ')'
+        },
+        {
+            open: '{',
+            close: '}'
+        },
+        {
+            open: '[',
+            close: ']'
+        }
+    ];
+    if (text.length > 0) {
+        const pair = pairs.find(p => p.open === text[0]);
+        if (pair) {
+            let index = 1;
+            let depth = 0;
+            while (index < text.length) {
+                const char = text.charAt(index);
+                if (['\'', '"', '`'].indexOf(char) >= 0) {
+                    const quotedString = getMatchingQuotes(text.substring(index));
+                    if (quotedString) {
+                        index += quotedString.length - 1;
+                    } else {
+                        console.log(`Could not find matching quote for ${char}`);
+                        return null;
+                    }
+                } else if (char === pair.close) {
+                    if (depth === 0) {
+                        return text.substring(0, index + 1);
+                    } else {
+                        depth--;
+                    }
+                } else if (char === pair.open) {
+                    depth++;
+                }
+                index++;
+            }
+            console.log(`Could not find matching pair for ${pair.open}`);
+            return null;
+        } else {
+            console.log(`The character '${text[0]}' is not a matchable pair.`);
+            return null;
+        }
+    } else {
+        console.log('Cannot find matching pair of an empty string.');
+        return null;
+    }
+}
+
+/**
+ * @param {string} text - should begin with ', " or `
+ */
+function getMatchingQuotes(text: string): string {
+    const quotes = ['\'', '"', '`'];
+    if (text.length > 0) {
+        const quote = quotes.find(q => q === text[0]);
+        if (quote) {
+            let index = 1;
+            while (index < text.length) {
+                const char = text.charAt(index);
+                if (char === '\\') {
+                    index++;
+                } else if (char === quote) {
+                    return text.substring(0, index + 1);
+                }
+                index++;
+            }
+        }
+    }
+    return null;
 }
