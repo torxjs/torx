@@ -31,27 +31,19 @@ export function compileFile(src: string, out: string): Promise<string> {
         let sourceName = src;
         let sourceExtension = 'torx';
         let outPath = out;
-
         const matchFileName = /(?<name>.*)\.(?<extension>.*)/.exec(src);
         if (matchFileName) {
             sourceName = matchFileName.groups.name;
             sourceExtension = matchFileName.groups.extension;
         }
-
         if (!out.includes('.')) {
             outPath = `${sourceName}.${out}`;
         }
-
         sourcePath = `${sourceName}.${sourceExtension}`;
-
         if (fs.existsSync(sourcePath)) {
-
             fs.readFile(sourcePath, 'utf8', (error, data) => {
                 if (!error) {
-                    compile(data, {
-                        title: 'Hello Title',
-                        list: ['one', 'two', 'three']
-                    }).then(out => {
+                    compile(data, {}).then(out => {
                         // console.log(out); // DEV
                         fs.writeFile(outPath, out, error => {
                             if (!error) {
@@ -269,8 +261,7 @@ function getMatchingPair(text: string): string {
                     if (quotedString) {
                         index += quotedString.length - 1;
                     } else {
-                        console.log(`Could not find matching quote for ${char}`);
-                        return null;
+                        throw new TorxError(`Could not find matching quote for ${char}`);
                     }
                 } else if (char === pair.close) {
                     if (depth === 0) {
@@ -283,15 +274,12 @@ function getMatchingPair(text: string): string {
                 }
                 index++;
             }
-            console.log(`Could not find matching pair for ${pair.open}`);
-            return null;
+            throw new TorxError(`Could not find matching pair for ${pair.open}`);
         } else {
-            console.log(`The character '${text[0]}' is not a matchable pair.`);
-            return null;
+            throw new TorxError(`The character '${text[0]}' is not a matchable pair.`);
         }
     } else {
-        console.log('Cannot find matching pair of an empty string.');
-        return null;
+        throw new TorxError('Cannot find matching pair of an empty string.');
     }
 }
 
