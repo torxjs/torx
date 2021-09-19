@@ -2,8 +2,8 @@
 
 'use strict';
 
+import * as fs from 'fs';
 import * as torx from '.';
-import { TorxError } from './shared';
 
 const args = process.argv.slice(2);
 
@@ -22,11 +22,7 @@ if (args[0]) {
             break;
         default:
             if (args[1]) {
-                torx.compileFile(args[0], args[1]).then(path => {
-                    console.log('BUILD:', path);
-                }).catch((error: TorxError) => {
-                    return error.log();
-                });
+                writeFile(args[0], args[1]);
             } else {
                 console.log(`ERROR: Unknown command "${args[0]}".`);
             }
@@ -34,4 +30,31 @@ if (args[0]) {
     }
 } else {
     console.log('ERROR: At least source file or argument is required.');
+}
+
+function writeFile(src: string, out: string): void {
+    let sourcePath;
+    let sourceName = src;
+    let sourceExtension = 'torx';
+    let outPath = out;
+    const matchFileName = /(?<name>.*)\.(?<extension>.*)/.exec(src);
+    if (matchFileName) {
+        sourceName = matchFileName.groups.name;
+        sourceExtension = matchFileName.groups.extension;
+    }
+    if (!out.includes('.')) {
+        outPath = `${sourceName}.${out}`;
+    }
+    sourcePath = `${sourceName}.${sourceExtension}`;
+    torx.compileFile(sourcePath).then(text => {
+        fs.writeFile(outPath, text, error => {
+            if (!error) {
+                console.log('BUILD:', outPath);
+            } else {
+                console.log(error);
+            }
+        });
+    }).catch(error =>
+        console.log(error)
+    );
 }

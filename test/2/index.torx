@@ -1,0 +1,8 @@
+<html>
+    <head>
+        <title>Torx Include Test</title>
+    </head>
+    <body>
+        @include('test/2/partials/footer.torx')
+    </body>
+</html>

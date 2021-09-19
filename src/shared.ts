@@ -12,7 +12,7 @@ export class TorxError {
         this.fileName = fileName;
     }
 
-    public log() {
+    public toString(): string {
         let output = `TorxError: ${this.message}`;
         if (this.fileName) {
             output += ' at ' + this.fileName;
@@ -23,7 +23,7 @@ export class TorxError {
                 }
             }
         }
-        console.log(output);
+        return output;
     }
 
     public setLineNumber(lineNumber: number): TorxError {

@@ -6,9 +6,8 @@
  * @project Torx
  */
 
-import * as ts from 'typescript';
 import * as fs from 'fs';
-
+import * as ts from 'typescript';
 import { TorxError } from './shared';
 
 export function express(filePath: string, options: any, callback: Function) {
@@ -25,51 +24,49 @@ export function express(filePath: string, options: any, callback: Function) {
     });
 }
 
-export function compileFile(src: string, out: string): Promise<string> {
+export function compileFile(filePath: string): Promise<string> {
     return new Promise((resolve, reject) => {
-        let sourcePath;
-        let sourceName = src;
-        let sourceExtension = 'torx';
-        let outPath = out;
-        const matchFileName = /(?<name>.*)\.(?<extension>.*)/.exec(src);
-        if (matchFileName) {
-            sourceName = matchFileName.groups.name;
-            sourceExtension = matchFileName.groups.extension;
-        }
-        if (!out.includes('.')) {
-            outPath = `${sourceName}.${out}`;
-        }
-        sourcePath = `${sourceName}.${sourceExtension}`;
-        if (fs.existsSync(sourcePath)) {
-            fs.readFile(sourcePath, 'utf8', (error, data) => {
+        if (fs.existsSync(filePath)) {
+            fs.readFile(filePath, 'utf8', (error, data) => {
                 if (!error) {
                     compile(data, {}).then(out => {
-                        // console.log(out); // DEV
-                        fs.writeFile(outPath, out, error => {
-                            if (!error) {
-                                resolve(outPath);
-                            } else {
-                                reject(error);
-                            }
-                        });
-                        resolve(sourcePath);
-                    }).catch((error: TorxError) =>
-                        reject(error.setFileName(sourcePath))
+                        resolve(out);
+                    }).catch(error =>
+                        reject(error)
                     );
                 } else {
-                    reject(error);
+                    reject(`Could not read file ${filePath}`);
                 }
             });
         } else {
-            reject(`No file exists at '${sourcePath}'.`);
+            reject(`No file exists at '${filePath}'`);
         }
     });
 }
 
-export function compile(source: string, data: object): Promise<string> {
+function transpileFile(filePath: string): Promise<string> {
+    return new Promise((resolve, reject) => {
+        if (fs.existsSync(filePath)) {
+            fs.readFile(filePath, 'utf8', (error, data) => {
+                if (!error) {
+                    transpile(data, filePath).then(out => {
+                        resolve(out);
+                    }).catch((error: TorxError) =>
+                        reject(error.setFileName(filePath))
+                    );
+                } else {
+                    reject(new TorxError(`Could not read file ${filePath}`));
+                }
+            });
+        } else {
+            reject(new TorxError(`No file exists at '${filePath}'`));
+        }
+    });
+}
+
+function compile(source: string, data: object): Promise<string> {
     return new Promise<string>((resolve, reject) => {
-        const page = new TorxFile(source, data);
-        page.getScript().then(script => {
+        transpile(source).then(script => {
             let input = '';
             Object.keys(data).forEach(key => {
                 const json = JSON.stringify(data[key]);
@@ -79,140 +76,134 @@ export function compile(source: string, data: object): Promise<string> {
             input += script;
             input += '); return __output__;';
             const js = ts.transpile(input);
+            // console.log(js); // DEV
             // console.log(input + '\n\n-----\n'); // DEV
             const torx = new Function(js);
             resolve(torx());
         }).catch(error => {
-            if (error instanceof TorxError) {
-                reject(error);
-            } else {
-                reject(error);
-            }
+            reject(error);
         });
     })
 
 }
 
-class TorxFile {
-
-    public text: string;
-    public data: object;
-
-    constructor(text: string, data: object) {
-        this.text = text;
-        this.data = data;
-    }
-
-    public getScript(): Promise<string> {
-        return new Promise((resolve, reject) => {
-            try {
-                resolve(getScript(this.text));
-            } catch (error) {
-                reject(error);
-            }
-        });
-    }
-
-}
-
-function getScript(text: string): string {
-    let symbolPos = text.indexOf('@');
-    if (symbolPos >= 0) {
-        let output = '`' + text.substring(0, symbolPos);
-        let index = symbolPos;
-        let commentDepth = 0;
-        do {
-            index++;
-            if (text.charAt(index) === '*') {
+/**
+ * Convert a Torx document into JavaScript
+ * @param {string} source - Text containing Torx syntax
+ * @param {string} filePath - Useful for including files with a relative path
+ */
+function transpile(source: string, filePath?: string): Promise<string> {
+    return new Promise<string>(async (resolve, reject) => {
+        let symbolPos = source.indexOf('@');
+        if (symbolPos >= 0) {
+            let output = '`' + source.substring(0, symbolPos);
+            let index = symbolPos;
+            let commentDepth = 0;
+            do {
                 index++;
-                commentDepth++;
-            } else if (commentDepth > 0) {
-                if (text.charAt(index - 1) === '*') {
-                    commentDepth--;
-                }
-            } else {
-                switch (text.charAt(index)) {
-                    case '@':
-                        output += '@';
-                        index++;
-                        break;
-                    case '(':
-                        const groupPair = getMatchingPair(text.substring(index));
-                        if (groupPair) {
-                            output += '` + ' + groupPair + ' + `';
-                            index += groupPair.length;
-                        } else {
-                            throw new TorxError(`Missing closing )`, index);
-                        }
-                        break;
-                    case '{':
-                        const bracketPair = getMatchingPair(text.substring(index));
-                        if (bracketPair) {
-                            output += '`);' + bracketPair.substring(1, bracketPair.length - 1) + 'print(`';
-                            index += bracketPair.length;
-                            // if (text.charAt(index) === '\n') {
-                            // 	index++;
-                            // }
-                        } else {
-                            throw new TorxError(`Missing closing }`, index);
-                        }
-                        break;
-                    default:
-                        const match = text.substring(index).match(/^\w+/);
-                        if (match) {
-                            const word = match[0];
-                            if (['function', 'for', 'if', 'while'].indexOf(word) >= 0) {
-                                // TODO: skip first (params) group
-                                const openBracketIndex = text.indexOf('{', index);
-                                if (openBracketIndex >= 0) {
-                                    const controlText = text.substring(index, openBracketIndex);
-                                    output += '`);' + controlText;
-                                    index += controlText.length + 1;
-                                    const bracketPair = getMatchingPair(text.substring(openBracketIndex));
-                                    if (bracketPair) {
-                                        const script = getScript(bracketPair.substring(1, bracketPair.length - 1));
-                                        if (word === 'function') {
-                                            output += '{ return ' + script + '; } print(`';
-                                        } else {
-                                            output += '{ print(' + script + '); } print(`';
-                                        }
-                                        index += bracketPair.length;
-                                        // if (text.charAt(index) === '\n') {
-                                        //     index++;
-                                        // }
-                                    } else {
-                                        throw new TorxError(`Could not find closing }`, index);
-                                    }
-                                } else {
-                                    throw new TorxError(`Expecting {`, index);
-                                }
+                if (source.charAt(index) === '*') {
+                    index++;
+                    commentDepth++;
+                } else if (commentDepth > 0) {
+                    if (source.charAt(index - 1) === '*') {
+                        commentDepth--;
+                    }
+                } else {
+                    switch (source.charAt(index)) {
+                        case '@':
+                            output += '@';
+                            index++;
+                            break;
+                        case '(':
+                            const groupPair = getMatchingPair(source.substring(index));
+                            if (groupPair) {
+                                output += '` + ' + groupPair + ' + `';
+                                index += groupPair.length;
                             } else {
-                                const variable = getVariable(text.substring(index + word.length));
-                                if (variable) {
-                                    output += '` + (' + word + variable + ' || \'\') + `';
-                                    index += word.length + variable.length;
+                                reject(generateTorxError('Missing closing )', source, index));
+                            }
+                            break;
+                        case '{':
+                            const bracketPair = getMatchingPair(source.substring(index));
+                            if (bracketPair) {
+                                output += '`);' + bracketPair.substring(1, bracketPair.length - 1) + 'print(`';
+                                index += bracketPair.length;
+                            } else {
+                                reject(generateTorxError('Missing closing }', source, index));
+                            }
+                            break;
+                        default:
+                            const match = source.substring(index).match(/^\w+/);
+                            if (match) {
+                                const word = match[0];
+                                if (['function', 'for', 'if', 'while'].indexOf(word) >= 0) {
+                                    // TODO: skip first (params) group
+                                    const openBracketIndex = source.indexOf('{', index);
+                                    if (openBracketIndex >= 0) {
+                                        const controlText = source.substring(index, openBracketIndex);
+                                        output += '`);' + controlText;
+                                        index += controlText.length + 1;
+                                        const bracketPair = getMatchingPair(source.substring(openBracketIndex));
+                                        if (bracketPair) {
+                                            // const script = transpile(bracketPair.substring(1, bracketPair.length - 1));
+                                            // if (word === 'function') {
+                                            //     output += '{ return ' + script + '; } print(`';
+                                            // } else {
+                                            //     output += '{ print(' + script + '); } print(`';
+                                            // }
+                                            // index += bracketPair.length;
+                                            await transpile(bracketPair.substring(1, bracketPair.length - 1)).then(script => {
+                                                if (word === 'function') {
+                                                    output += '{ return ' + script + '; } print(`';
+                                                } else {
+                                                    output += '{ print(' + script + '); } print(`';
+                                                }
+                                                index += bracketPair.length;
+                                            }).catch(error => reject(error));
+                                        } else {
+                                            reject(generateTorxError('Could not find closing }', source, index));
+                                        }
+                                    } else {
+                                        reject(generateTorxError('Expecting {', source, index));
+                                    }
+                                } else if (word === 'include') {
+                                    const parenthisis = getMatchingPair(source.substring(index + word.length));
+                                    const script = parenthisis.slice(1, -1);
+                                    const filePath = new Function(`return ${script}`)();
+                                    await transpileFile(filePath).then(js => {
+                                        output += '` + ' + js + ' + `';
+                                        index += word.length + parenthisis.length;
+                                    }).catch(error => {
+                                        reject(generateTorxError(error, source, index));
+                                    });
                                 } else {
-                                    output += '` + (' + word + ' || \'\') + `';
-                                    index += word.length;
+                                    const variable = getVariable(source.substring(index + word.length));
+                                    if (variable) {
+                                        output += '` + (' + word + variable + ' || \'\') + `';
+                                        index += word.length + variable.length;
+                                    } else {
+                                        output += '` + (' + word + ' || \'\') + `';
+                                        index += word.length;
+                                    }
                                 }
                             }
-                        }
-                        break;
+                            break;
+                    }
                 }
-            }
-            symbolPos = text.indexOf('@', index);
-            if (symbolPos >= 0) {
-                if (commentDepth === 0) {
-                    output += `${text.substring(index, symbolPos)}`;
+                symbolPos = source.indexOf('@', index);
+                if (symbolPos >= 0) {
+                    if (commentDepth === 0) {
+                        output += `${source.substring(index, symbolPos)}`;
+                    }
+                    index = source.indexOf('@', symbolPos);
                 }
-                index = text.indexOf('@', symbolPos);
-            }
-        } while (symbolPos >= 0);
-        output += text.substring(index) + '`';
-        return output;
-    } else {
-        return text;
-    }
+            } while (symbolPos >= 0);
+            output += source.substring(index) + '`';
+            resolve(output);
+        } else {
+            resolve(source);
+        }
+    });
 }
 
 /**
@@ -304,4 +295,18 @@ function getMatchingQuotes(text: string): string {
         }
     }
     return null;
+}
+
+/**
+ * Get the column number and line number from a source and index
+ * @param {string} message - The error message to display
+ * @param {string} source - The text containing multiple lines
+ * @param {number} index - Location to get line number from
+ */
+function generateTorxError(message: string, source: string, index: number): TorxError {
+    const leadingText = source.substring(0, index);
+    const leadingLines = leadingText.split('\n');
+    const lineNumber = leadingLines.length;
+    const columnNumber = leadingLines[lineNumber - 1].length;
+    return new TorxError(message, columnNumber, lineNumber);
 }
