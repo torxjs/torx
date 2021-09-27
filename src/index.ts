@@ -105,7 +105,7 @@ function transpile(source: string, filePath?: string): Promise<string> {
                     index++;
                     commentDepth++;
                 } else if (commentDepth > 0) {
-                    if (source.charAt(index - 1) === '*') {
+                    if (source.charAt(index - 2) === '*') {
                         commentDepth--;
                     }
                 } else {
@@ -198,7 +198,10 @@ function transpile(source: string, filePath?: string): Promise<string> {
                     index = source.indexOf('@', symbolPos);
                 }
             } while (symbolPos >= 0);
-            output += source.substring(index) + '`';
+            if (commentDepth === 0) {
+                output += source.substring(index);
+            }
+            output += '`';
             resolve(output);
         } else {
             resolve(source);
