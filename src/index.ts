@@ -136,7 +136,7 @@ function transpile(source: string, filePath?: string): Promise<string> {
                             const match = source.substring(index).match(/^\w+/);
                             if (match) {
                                 const word = match[0];
-                                if (['function', 'for', 'if', 'while'].indexOf(word) >= 0) {
+                                if (['function', 'for', 'if'].indexOf(word) >= 0) {
                                     // TODO: skip first (params) group
                                     const openBracketIndex = source.indexOf('{', index);
                                     if (openBracketIndex >= 0) {
