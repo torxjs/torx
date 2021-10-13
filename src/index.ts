@@ -44,15 +44,16 @@ export function compileFile(filePath: string): Promise<string> {
     });
 }
 
-function transpileFile(filePath: string): Promise<string> {
+function transpileFile(filePath: string, data?: any): Promise<string> {
     return new Promise((resolve, reject) => {
         if (fs.existsSync(filePath)) {
-            fs.readFile(filePath, 'utf8', (error, data) => {
+            fs.readFile(filePath, 'utf8', (error, fileData) => {
                 if (!error) {
-                    transpile(data, filePath).then(out => {
+                    // transpile(data, filePath).then(out => {
+                    transpile(fileData, data).then(out => {
                         resolve(out);
                     }).catch((error: TorxError) =>
-                        reject(error.setFileName(filePath))
+                        reject(error.setFileName(filePath)) // TODO: Fix filePath
                     );
                 } else {
                     reject(new TorxError(`Could not read file ${filePath}`));
@@ -87,10 +88,20 @@ export function compile(source: string, data: object): Promise<string> {
  */
 function generateScriptVariables(data: any): string {
     let output = '';
-    Object.keys(data).forEach(key => {
-        const json = JSON.stringify(data[key]);
-        output += `var ${key} = ${json ? json : data[key]}; `;
-    });
+    if (data) {
+        Object.keys(data).forEach(key => {
+            if (data[key]) {
+                try {
+                    const json = JSON.stringify(data[key]);
+                    output += `var ${key} = ${json ? json : data[key]}; `;
+                } catch (error) {
+                    output += `var ${key} = null; `;
+                }
+            } else {
+                output += `var ${key} = null; `;
+            }
+        });
+    }
     return output;
 }
 
@@ -153,7 +164,7 @@ function transpile(source: string, data?: any): Promise<string> {
                                         index += controlText.length + 1;
                                         const bracketPair = getMatchingPair(source.substring(openBracketIndex));
                                         if (bracketPair) {
-                                            await transpile(bracketPair.substring(1, bracketPair.length - 1)).then(script => {
+                                            await transpile(bracketPair.substring(1, bracketPair.length - 1), data).then(script => {
                                                 if (word === 'function') {
                                                     output += '{ return ' + script + '; } print(`';
                                                 } else {
@@ -176,9 +187,10 @@ function transpile(source: string, data?: any): Promise<string> {
                                     try {
                                         filePath = new Function(`${dataScope} return ${script}`)();
                                     } catch (error) {
-                                        reject(error);
+                                        console.log(error); // DEV
+                                        // reject(error);
                                     }
-                                    await transpileFile(filePath).then(js => {
+                                    await transpileFile(filePath, data).then(js => {
                                         output += '` + ' + js + ' + `';
                                         index += word.length + parenthisis.length;
                                     }).catch(error => {
