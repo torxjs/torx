@@ -64,14 +64,10 @@ function transpileFile(filePath: string): Promise<string> {
     });
 }
 
-function compile(source: string, data: object): Promise<string> {
+export function compile(source: string, data: object): Promise<string> {
     return new Promise<string>((resolve, reject) => {
-        transpile(source).then(script => {
-            let input = '';
-            Object.keys(data).forEach(key => {
-                const json = JSON.stringify(data[key]);
-                input += `var ${key} = ${json ? json : data[key]}; `;
-            });
+        transpile(source, data).then(script => {
+            let input = generateScriptVariables(data);
             input += `var __output__ = ''; function print(text) { __output__ += text; return text; } print(`;
             input += script;
             input += '); return __output__;';
@@ -84,15 +80,27 @@ function compile(source: string, data: object): Promise<string> {
             reject(error);
         });
     })
+}
 
+/**
+ * Returns a string that declares JavaScript variables
+ */
+function generateScriptVariables(data: any): string {
+    let output = '';
+    Object.keys(data).forEach(key => {
+        const json = JSON.stringify(data[key]);
+        output += `var ${key} = ${json ? json : data[key]}; `;
+    });
+    return output;
 }
 
 /**
  * Convert a Torx document into JavaScript
  * @param {string} source - Text containing Torx syntax
- * @param {string} filePath - Useful for including files with a relative path
+ * @param {any} data - Data to include in the scope
+ * @param {string} filePath - Useful for including files with a relative path?
  */
-function transpile(source: string, filePath?: string): Promise<string> {
+function transpile(source: string, data?: any): Promise<string> {
     return new Promise<string>(async (resolve, reject) => {
         let symbolPos = source.indexOf('@');
         if (symbolPos >= 0) {
@@ -145,13 +153,6 @@ function transpile(source: string, filePath?: string): Promise<string> {
                                         index += controlText.length + 1;
                                         const bracketPair = getMatchingPair(source.substring(openBracketIndex));
                                         if (bracketPair) {
-                                            // const script = transpile(bracketPair.substring(1, bracketPair.length - 1));
-                                            // if (word === 'function') {
-                                            //     output += '{ return ' + script + '; } print(`';
-                                            // } else {
-                                            //     output += '{ print(' + script + '); } print(`';
-                                            // }
-                                            // index += bracketPair.length;
                                             await transpile(bracketPair.substring(1, bracketPair.length - 1)).then(script => {
                                                 if (word === 'function') {
                                                     output += '{ return ' + script + '; } print(`';
@@ -169,7 +170,14 @@ function transpile(source: string, filePath?: string): Promise<string> {
                                 } else if (word === 'include') {
                                     const parenthisis = getMatchingPair(source.substring(index + word.length));
                                     const script = parenthisis.slice(1, -1);
-                                    const filePath = new Function(`return ${script}`)();
+                                    // TODO: find better solution that includes the full scope
+                                    const dataScope = generateScriptVariables(data);
+                                    let filePath = '';
+                                    try {
+                                        filePath = new Function(`${dataScope} return ${script}`)();
+                                    } catch (error) {
+                                        reject(error);
+                                    }
                                     await transpileFile(filePath).then(js => {
                                         output += '` + ' + js + ' + `';
                                         index += word.length + parenthisis.length;
