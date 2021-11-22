@@ -1,40 +1,40 @@
 {
-	"name": "torx",
-	"version": "1.0.0-alpha",
-	"description": "Torx formatting, syntax and snippets for Visual Studio Code",
-	"author": {
-		"name": "Stephen Ullom",
-		"url": "http://stephenullom.com"
-	},
-	"homepage": "https://github.com/stephen-ullom/torx/wiki",
-	"repository": {
-		"type": "git",
-		"url": "git+https://github.com/stephen-ullom/torx.git"
-	},
-	"bugs": {
-		"url": "https://github.com/stephen-ullom/torx/issues"
-	},
-	"keywords": [
-		"torx",
-		"template",
-		"javascript"
-	],
-	"main": "./bin/index.js",
-	"bin": {
-		"torx": "./bin/cli.js"
-	},
-	"scripts": {
-		"start": "node ./bin/cli.js test/test html",
-		"test": "node test"
-	},
-	"devDependencies": {
-		"@types/node": "^16.7.10",
-		"@typescript-eslint/eslint-plugin": "^5.4.0",
-		"@typescript-eslint/parser": "^5.4.0",
-		"eslint": "^8.3.0",
-		"jest": "^27.3.1"
-	},
-	"dependencies": {
-		"typescript": "^4.4.2"
-	}
+  "name": "torx",
+  "version": "1.0.0-alpha",
+  "description": "Torx formatting, syntax and snippets for Visual Studio Code",
+  "author": {
+    "name": "Stephen Ullom",
+    "url": "http://stephenullom.com"
+  },
+  "homepage": "https://github.com/stephen-ullom/torx/wiki",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/stephen-ullom/torx.git"
+  },
+  "bugs": {
+    "url": "https://github.com/stephen-ullom/torx/issues"
+  },
+  "keywords": [
+    "torx",
+    "template",
+    "javascript"
+  ],
+  "main": "./bin/index.js",
+  "bin": {
+    "torx": "./bin/cli.js"
+  },
+  "scripts": {
+    "start": "node ./bin/cli.js test/test html",
+    "test": "node test"
+  },
+  "devDependencies": {
+    "@types/node": "^16.7.10",
+    "@typescript-eslint/eslint-plugin": "^5.4.0",
+    "@typescript-eslint/parser": "^5.4.0",
+    "eslint": "^8.3.0",
+    "jest": "^27.3.1"
+  },
+  "dependencies": {
+    "typescript": "^4.4.2"
+  }
 }
