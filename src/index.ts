@@ -13,7 +13,7 @@ export function express(filePath: string, options: any, callback: Function) {
    fs.readFile(filePath, "utf8", (error, data) => {
       if (!error) {
          compile(data, options)
-            .then((out) => callback(null, out))
+            .then(out => callback(null, out))
             .catch((error: TorxError) => callback(error));
       } else {
          callback(error);
@@ -27,10 +27,10 @@ export function compileFile(filePath: string): Promise<string> {
          fs.readFile(filePath, "utf8", (error, data) => {
             if (!error) {
                compile(data, {})
-                  .then((out) => {
+                  .then(out => {
                      resolve(out);
                   })
-                  .catch((error) => reject(error));
+                  .catch(error => reject(error));
             } else {
                reject(`Could not read file ${filePath}`);
             }
@@ -43,22 +43,24 @@ export function compileFile(filePath: string): Promise<string> {
 
 export function compile(source: string, data: object): Promise<string> {
    return new Promise<string>((resolve, reject) => {
-      transpile(source, data)
-         .then((script) => {
-            let input = generateScriptVariables(data);
-            input += `var __output__ = '';`;
-            input += "function print(text) { __output__ += text; return text; } print(";
-            input += script;
-            input += "); return __output__;";
-            const js = ts.transpile(input);
-            // console.log(js); // DEV
-            // console.log(input + '\n\n-----\n'); // DEV
-            const torx = new Function(js);
-            resolve(torx());
-         })
-         .catch((error) => {
-            reject(error);
-         });
+      if (source.includes("@")) {
+         transpile(source, data)
+            .then(script => {
+               let input = generateScriptVariables(data);
+               input += `var __output__ = '';`;
+               input += "function print(text) { __output__ += text; return text; } print(";
+               input += script;
+               input += "); return __output__;";
+               const js = ts.transpile(input);
+               const torx = new Function(js);
+               resolve(torx());
+            })
+            .catch(error => {
+               reject(error);
+            });
+      } else {
+         resolve(source);
+      }
    });
 }
 
@@ -69,7 +71,7 @@ function transpileFile(filePath: string, data?: any): Promise<string> {
             if (!error) {
                // transpile(data, filePath).then(out => {
                transpile(fileData, data)
-                  .then((out) => {
+                  .then(out => {
                      resolve(out);
                   })
                   .catch(
@@ -92,7 +94,7 @@ function transpileFile(filePath: string, data?: any): Promise<string> {
 function generateScriptVariables(data: any): string {
    let output = "";
    if (data) {
-      Object.keys(data).forEach((key) => {
+      Object.keys(data).forEach(key => {
          if (data[key]) {
             try {
                const json = JSON.stringify(data[key]);
@@ -168,7 +170,7 @@ function transpile(source: string, data?: any): Promise<string> {
                               const bracketPair = getMatchingPair(source.substring(openBracketIndex));
                               if (bracketPair) {
                                  await transpile(bracketPair.substring(1, bracketPair.length - 1), data)
-                                    .then((script) => {
+                                    .then(script => {
                                        if (word === "function") {
                                           output += "{ return " + script + "; } print(`";
                                        } else {
@@ -176,7 +178,7 @@ function transpile(source: string, data?: any): Promise<string> {
                                        }
                                        index += bracketPair.length;
                                     })
-                                    .catch((error) => reject(error));
+                                    .catch(error => reject(error));
                               } else {
                                  reject(generateTorxError("Could not find closing }", source, index));
                               }
@@ -192,15 +194,14 @@ function transpile(source: string, data?: any): Promise<string> {
                            try {
                               filePath = new Function(`${dataScope} return ${script}`)();
                            } catch (error) {
-                              console.log(error); // DEV
-                              // reject(error);
+                              reject(error);
                            }
                            await transpileFile(filePath, data)
-                              .then((js) => {
+                              .then(js => {
                                  output += "` + " + js + " + `";
                                  index += word.length + parenthisis.length;
                               })
-                              .catch((error) => {
+                              .catch(error => {
                                  reject(generateTorxError(error, source, index));
                               });
                         } else {
@@ -271,7 +272,7 @@ function getMatchingPair(text: string): string {
       },
    ];
    if (text.length > 0) {
-      const pair = pairs.find((p) => p.open === text[0]);
+      const pair = pairs.find(p => p.open === text[0]);
       if (pair) {
          let index = 1;
          let depth = 0;
@@ -310,7 +311,7 @@ function getMatchingPair(text: string): string {
 function getMatchingQuotes(text: string): string {
    const quotes = ["'", '"', "`"];
    if (text.length > 0) {
-      const quote = quotes.find((q) => q === text[0]);
+      const quote = quotes.find(q => q === text[0]);
       if (quote) {
          let index = 1;
          while (index < text.length) {

@@ -1,49 +1,75 @@
 import { compile } from "./index";
 
+function torxTest(object: { template: string; data?: object; output: string }) {
+   expect(compile(object.template, object.data)).resolves.toEqual(object.output);
+}
+
 describe("compile", () => {
+   describe("plain text", () => {
+      it("Title", async () => {
+         torxTest({
+            template: "Title",
+            output: "Title",
+         });
+      });
+
+      it("name@@domain.com", async () => {
+         torxTest({
+            template: "name@@domain.com",
+            output: "name@domain.com",
+         });
+      });
+   });
+
    describe("implicit", () => {
       it("@title", async () => {
-         const template = "@title";
-         const data = { title: "My Title" };
-         const result = data.title;
-         expect(compile(template, data)).resolves.toEqual(result);
+         torxTest({
+            template: "@title",
+            data: { title: "My Title" },
+            output: "My Title",
+         });
       });
 
       it("<h1>@title<h1>", () => {
-         const template = "<h1>@title<h1>";
-         const data = { title: "My Title" };
-         const result = `<h1>${data.title}<h1>`;
-         expect(compile(template, data)).resolves.toEqual(result);
+         torxTest({
+            template: "<h1>@title<h1>",
+            data: { title: "My Title" },
+            output: "<h1>My Title<h1>",
+         });
       });
 
       it("@getTitle()", () => {
-         const template = "@getTitle()";
-         const data = { getTitle: () => "My Title" };
-         const result = data.getTitle();
-         expect(compile(template, data)).resolves.toEqual(result);
+         torxTest({
+            template: "@getTitle()",
+            data: { getTitle: () => "My Title" },
+            output: "My Title",
+         });
       });
 
       it("@caps('My Title')", () => {
-         const template = "@caps('My Title')";
-         const data = { caps: (param: string) => param.toUpperCase() };
-         const result = "MY TITLE";
-         expect(compile(template, data)).resolves.toEqual(result);
+         torxTest({
+            template: "@caps('My Title')",
+            data: { caps: (param: string) => param.toUpperCase() },
+            output: "MY TITLE",
+         });
       });
    });
 
    describe("explicit", () => {
       it("@(title)", async () => {
-         const template = "@(title)";
-         const data = { title: "My Title" };
-         const result = data.title;
-         expect(compile(template, data)).resolves.toEqual(result);
+         torxTest({
+            template: "@(title)",
+            data: { title: "My Title" },
+            output: "My Title",
+         });
       });
 
       it("<h1>@(title)<h1>", () => {
-         const template = "<h1>@(title)<h1>";
-         const data = { title: "My Title" };
-         const result = `<h1>${data.title}<h1>`;
-         expect(compile(template, data)).resolves.toEqual(result);
+         torxTest({
+            template: "<h1>@(title)<h1>",
+            data: { title: "My Title" },
+            output: "<h1>My Title<h1>",
+         });
       });
    });
 });

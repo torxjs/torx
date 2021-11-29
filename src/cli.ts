@@ -48,8 +48,8 @@ function writeFile(src: string, out: string): void {
    sourcePath = `${sourceName}.${sourceExtension}`;
    torx
       .compileFile(sourcePath)
-      .then((text) => {
-         fs.writeFile(outPath, text, (error) => {
+      .then(text => {
+         fs.writeFile(outPath, text, error => {
             if (!error) {
                console.log("BUILD:", outPath);
             } else {
@@ -57,5 +57,5 @@ function writeFile(src: string, out: string): void {
             }
          });
       })
-      .catch((error) => console.log(error));
+      .catch(error => console.log(error));
 }
