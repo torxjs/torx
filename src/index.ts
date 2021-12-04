@@ -21,12 +21,12 @@ export function express(filePath: string, options: any, callback: Function) {
    });
 }
 
-export function compileFile(filePath: string): Promise<string> {
+export function compileFile(filePath: string, data = {}): Promise<string> {
    return new Promise((resolve, reject) => {
       if (fs.existsSync(filePath)) {
-         fs.readFile(filePath, "utf8", (error, data) => {
+         fs.readFile(filePath, "utf8", (error, text) => {
             if (!error) {
-               compile(data, {})
+               compile(text, data)
                   .then(out => {
                      resolve(out);
                   })
@@ -41,19 +41,25 @@ export function compileFile(filePath: string): Promise<string> {
    });
 }
 
-export function compile(source: string, data: object): Promise<string> {
+export function compile(source: string, data: object = {}): Promise<string> {
    return new Promise<string>((resolve, reject) => {
       if (source.includes("@")) {
          transpile(source, data)
-            .then(script => {
-               let input = generateScriptVariables(data);
-               input += `var __output__ = '';`;
-               input += "function print(text) { __output__ += text; return text; } print(";
-               input += script;
-               input += "); return __output__;";
-               const js = ts.transpile(input);
-               const torx = new Function(js);
-               resolve(torx());
+            .then(async script => {
+               const input = [
+                  "(async function() {",
+                  generateScriptVariables(data),
+                  "var __output__ = ''; ",
+                  "var __include = async (path, data) => { __output__ += await compileFile(path, data); }; ",
+                  "var __print = (text) => { __output__ += text; return text; }; ",
+                  "__print(" + script + "); ",
+                  "return __output__; ",
+                  "})();",
+               ];
+               const js = ts.transpile(input.join(""));
+               // const torx = new Function(js);
+               const result = await eval(js);
+               resolve(result);
             })
             .catch(error => {
                reject(error);
@@ -116,7 +122,7 @@ function generateScriptVariables(data: any): string {
  * @param {any} data - Data to include in the scope
  * @param {string} filePath - Useful for including files with a relative path?
  */
-function transpile(source: string, data?: any): Promise<string> {
+function transpile(source: string, data: any = {}): Promise<string> {
    return new Promise<string>(async (resolve, reject) => {
       let symbolPos = source.indexOf("@");
       if (symbolPos >= 0) {
@@ -150,7 +156,7 @@ function transpile(source: string, data?: any): Promise<string> {
                   case "{":
                      const bracketPair = getMatchingPair(source.substring(index));
                      if (bracketPair) {
-                        output += "`);" + bracketPair.substring(1, bracketPair.length - 1) + "print(`";
+                        output += "`);" + bracketPair.substring(1, bracketPair.length - 1) + "__print(`";
                         index += bracketPair.length;
                      } else {
                         reject(generateTorxError("Missing closing }", source, index));
@@ -172,9 +178,9 @@ function transpile(source: string, data?: any): Promise<string> {
                                  await transpile(bracketPair.substring(1, bracketPair.length - 1), data)
                                     .then(script => {
                                        if (word === "function") {
-                                          output += "{ return " + script + "; } print(`";
+                                          output += "{ return " + script + "; } __print(`";
                                        } else {
-                                          output += "{ print(" + script + "); } print(`";
+                                          output += "{ __print(" + script + "); } __print(`";
                                        }
                                        index += bracketPair.length;
                                     })
@@ -189,21 +195,27 @@ function transpile(source: string, data?: any): Promise<string> {
                            const parenthisis = getMatchingPair(source.substring(index + word.length));
                            const script = parenthisis.slice(1, -1);
                            // TODO: find better solution that includes the full scope
-                           const dataScope = generateScriptVariables(data);
-                           let filePath = "";
-                           try {
-                              filePath = new Function(`${dataScope} return ${script}`)();
-                           } catch (error) {
-                              reject(error);
-                           }
-                           await transpileFile(filePath, data)
-                              .then(js => {
-                                 output += "` + " + js + " + `";
-                                 index += word.length + parenthisis.length;
-                              })
-                              .catch(error => {
-                                 reject(generateTorxError(error, source, index));
-                              });
+                           // const dataScope = generateScriptVariables(data);
+                           // let filePath = "";
+                           // try {
+                           //    filePath = new Function(`${dataScope} return ${script}`)();
+                           // } catch (error) {
+                           //    reject(error);
+                           // }
+                           // await transpileFile(filePath, data)
+                           //    .then(js => {
+                           //       output += "` + " + js + " + `";
+                           //       index += word.length + parenthisis.length;
+                           //    })
+                           //    .catch(error => {
+                           //       reject(generateTorxError(error, source, index));
+                           //    });
+
+                           // output += "`); await __include(" + script + "); __print(`";
+
+                           output += "`); await __include(" + script + "); __print(`";
+
+                           index += word.length + parenthisis.length;
                         } else {
                            const variable = getVariable(source.substring(index + word.length));
                            if (variable) {
