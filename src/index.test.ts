@@ -1,20 +1,20 @@
 import { compile } from "./index";
 
-function torxTest(object: { template: string; data?: object; output: string }) {
-   expect(compile(object.template, object.data)).resolves.toEqual(object.output);
+async function torxTest(object: { template: string; data?: object; output: string }): Promise<void> {
+   await expect(compile(object.template, object.data)).resolves.toEqual(object.output);
 }
 
 describe("compile", () => {
    describe("plain text", () => {
       it("Title", async () => {
-         torxTest({
+         await torxTest({
             template: "Title",
             output: "Title",
          });
       });
 
       it("name@@domain.com", async () => {
-         torxTest({
+         await torxTest({
             template: "name@@domain.com",
             output: "name@domain.com",
          });
@@ -23,31 +23,31 @@ describe("compile", () => {
 
    describe("implicit", () => {
       it("@title", async () => {
-         torxTest({
+         await torxTest({
             template: "@title",
             data: { title: "My Title" },
             output: "My Title",
          });
       });
 
-      it("<h1>@title<h1>", () => {
-         torxTest({
+      it("<h1>@title<h1>", async () => {
+         await torxTest({
             template: "<h1>@title<h1>",
             data: { title: "My Title" },
             output: "<h1>My Title<h1>",
          });
       });
 
-      it("@getTitle()", () => {
-         torxTest({
+      it("@getTitle()", async () => {
+         await torxTest({
             template: "@getTitle()",
             data: { getTitle: () => "My Title" },
             output: "My Title",
          });
       });
 
-      it("@caps('My Title')", () => {
-         torxTest({
+      it("@caps('My Title')", async () => {
+         await torxTest({
             template: "@caps('My Title')",
             data: { caps: (param: string) => param.toUpperCase() },
             output: "MY TITLE",
@@ -57,18 +57,54 @@ describe("compile", () => {
 
    describe("explicit", () => {
       it("@(title)", async () => {
-         torxTest({
+         await torxTest({
             template: "@(title)",
             data: { title: "My Title" },
             output: "My Title",
          });
       });
 
-      it("<h1>@(title)<h1>", () => {
-         torxTest({
-            template: "<h1>@(title)<h1>",
+      it("<h1>@(title)</h1>", async () => {
+         await torxTest({
+            template: "<h1>@(title)</h1>",
             data: { title: "My Title" },
-            output: "<h1>My Title<h1>",
+            output: "<h1>My Title</h1>",
+         });
+      });
+   });
+
+   describe("single line comment", () => {
+      it("@// @title inside comment", async () => {
+         await torxTest({
+            template: "@* @title inside comment *@",
+            data: { title: "My Title" },
+            output: "",
+         });
+      });
+
+      it("<h1>There is no @// @title inside\\n comment</h1>", async () => {
+         await torxTest({
+            template: "<h1>There is no @// @title inside\n comment</h1>",
+            data: { title: "My Title" },
+            output: "<h1>There is no \n comment</h1>",
+         });
+      });
+   });
+
+   describe("multiline comment", () => {
+      it("@* @title inside comment *@", async () => {
+         await torxTest({
+            template: "@* @title inside comment *@",
+            data: { title: "My Title" },
+            output: "",
+         });
+      });
+
+      it("<h1>There is no @* @title inside comment *@</h1>", async () => {
+         await torxTest({
+            template: "<h1>There is no @* @title inside comment *@</h1>",
+            data: { title: "My Title" },
+            output: "<h1>There is no </h1>",
          });
       });
    });

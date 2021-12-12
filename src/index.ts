@@ -144,6 +144,12 @@ function transpile(source: string, data: any = {}): Promise<string> {
                      output += "@";
                      index++;
                      break;
+                  case "/":
+                     if (source.charAt(index + 1) === "/") {
+                        const endOfLine = source.indexOf("\n", index + 1);
+                        index = endOfLine;
+                     }
+                     break;
                   case "(":
                      const groupPair = getMatchingPair(source.substring(index));
                      if (groupPair) {
@@ -194,27 +200,7 @@ function transpile(source: string, data: any = {}): Promise<string> {
                         } else if (word === "include") {
                            const parenthisis = getMatchingPair(source.substring(index + word.length));
                            const script = parenthisis.slice(1, -1);
-                           // TODO: find better solution that includes the full scope
-                           // const dataScope = generateScriptVariables(data);
-                           // let filePath = "";
-                           // try {
-                           //    filePath = new Function(`${dataScope} return ${script}`)();
-                           // } catch (error) {
-                           //    reject(error);
-                           // }
-                           // await transpileFile(filePath, data)
-                           //    .then(js => {
-                           //       output += "` + " + js + " + `";
-                           //       index += word.length + parenthisis.length;
-                           //    })
-                           //    .catch(error => {
-                           //       reject(generateTorxError(error, source, index));
-                           //    });
-
-                           // output += "`); await __include(" + script + "); __print(`";
-
                            output += "`); await __include(" + script + "); __print(`";
-
                            index += word.length + parenthisis.length;
                         } else {
                            const variable = getVariable(source.substring(index + word.length));
