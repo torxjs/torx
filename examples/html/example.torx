@@ -1,10 +1,17 @@
+@{
+    const title = "Example";
+}
+@function button(label: string) {
+    <button>@label</button>
+}
 <!DOCTYPE html>
 <html>
     <head>
-        <title>@title</title>
     </head>
     <body>
         <h1>@title</h1>
-        @torx.render('example/partial.torx')
+        @for (const key in ['a','b','c']) {
+            @button(key)
+        }
     </body>
 </html>

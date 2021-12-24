@@ -1,6 +1,6 @@
 @{
-    
+    const documentType = "plain text file";
 }
+This is a @documentType.
 
-This is a plain text document.
-
+A @documentType is very simple.

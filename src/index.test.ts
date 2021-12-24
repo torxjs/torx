@@ -82,11 +82,11 @@ describe("compile", () => {
          });
       });
 
-      it("<h1>There is no @// @title inside\\n comment</h1>", async () => {
+      it("<h1>There is no @// @title inside\\ncomment</h1>", async () => {
          await torxTest({
-            template: "<h1>There is no @// @title inside\n comment</h1>",
+            template: "<h1>There is no @// @title inside\ncomment</h1>",
             data: { title: "My Title" },
-            output: "<h1>There is no \n comment</h1>",
+            output: "<h1>There is no comment</h1>",
          });
       });
    });

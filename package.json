@@ -1,6 +1,6 @@
 {
    "name": "torx",
-   "version": "1.0.0-alpha",
+   "version": "0.3.0",
    "description": "Torx formatting, syntax and snippets for Visual Studio Code",
    "author": {
       "name": "Stephen Ullom",

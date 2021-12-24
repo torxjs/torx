@@ -9,6 +9,9 @@ import * as fs from "fs";
 import * as ts from "typescript";
 import { TorxError } from "./torx-error";
 
+/**
+ * Output the Torx compiler for easy access with express.
+ */
 export function express(filePath: string, options: any, callback: Function) {
    fs.readFile(filePath, "utf8", (error, data) => {
       if (!error) {
@@ -21,6 +24,9 @@ export function express(filePath: string, options: any, callback: Function) {
    });
 }
 
+/**
+ * Compile from a Torx file and output the text results.
+ */
 export function compileFile(filePath: string, data = {}): Promise<string> {
    return new Promise((resolve, reject) => {
       if (fs.existsSync(filePath)) {
@@ -41,6 +47,9 @@ export function compileFile(filePath: string, data = {}): Promise<string> {
    });
 }
 
+/**
+ * Compile a Torx source and output the text results.
+ */
 export function compile(source: string, data: object = {}): Promise<string> {
    return new Promise<string>((resolve, reject) => {
       if (source.includes("@")) {
@@ -49,16 +58,16 @@ export function compile(source: string, data: object = {}): Promise<string> {
                const input = [
                   "(async function() {",
                   generateScriptVariables(data),
-                  "var __output__ = ''; ",
-                  "var __include = async (path, data) => { __output__ += await compileFile(path, data); }; ",
-                  "var __print = (text) => { __output__ += text; return text; }; ",
+                  "var __output = ''; ",
+                  "var __include = async (path, data) => { __output += await compileFile(path, data); }; ",
+                  "var __print = (text) => { __output += text; return text; }; ",
                   "__print(" + script + "); ",
-                  "return __output__; ",
+                  "return __output; ",
                   "})();",
                ];
-               const js = ts.transpile(input.join(""));
+               const typeScript = ts.transpile(input.join(""));
                // const torx = new Function(js);
-               const result = await eval(js);
+               const result = await eval(typeScript);
                resolve(result);
             })
             .catch(error => {
@@ -70,12 +79,14 @@ export function compile(source: string, data: object = {}): Promise<string> {
    });
 }
 
+/**
+ * Transpile a Torx document into TypeScript.
+ */
 function transpileFile(filePath: string, data?: any): Promise<string> {
    return new Promise((resolve, reject) => {
       if (fs.existsSync(filePath)) {
          fs.readFile(filePath, "utf8", (error, fileData) => {
             if (!error) {
-               // transpile(data, filePath).then(out => {
                transpile(fileData, data)
                   .then(out => {
                      resolve(out);
@@ -95,7 +106,7 @@ function transpileFile(filePath: string, data?: any): Promise<string> {
 }
 
 /**
- * Returns a string that declares JavaScript variables
+ * Converts variable data into raw JavaScript.
  */
 function generateScriptVariables(data: any): string {
    let output = "";
@@ -117,10 +128,9 @@ function generateScriptVariables(data: any): string {
 }
 
 /**
- * Convert a Torx document into JavaScript
+ * Transpile a Torx document into TypeScript.
  * @param {string} source - Text containing Torx syntax
  * @param {any} data - Data to include in the scope
- * @param {string} filePath - Useful for including files with a relative path?
  */
 function transpile(source: string, data: any = {}): Promise<string> {
    return new Promise<string>(async (resolve, reject) => {
@@ -148,6 +158,9 @@ function transpile(source: string, data: any = {}): Promise<string> {
                      if (source.charAt(index + 1) === "/") {
                         const endOfLine = source.indexOf("\n", index + 1);
                         index = endOfLine;
+                        if (source.charAt(index) === "\n") {
+                           index++;
+                        }
                      }
                      break;
                   case "(":
@@ -164,6 +177,9 @@ function transpile(source: string, data: any = {}): Promise<string> {
                      if (bracketPair) {
                         output += "`);" + bracketPair.substring(1, bracketPair.length - 1) + "__print(`";
                         index += bracketPair.length;
+                        if (source.charAt(index) === "\n") {
+                           index++;
+                        }
                      } else {
                         reject(generateTorxError("Missing closing }", source, index));
                      }
@@ -181,14 +197,24 @@ function transpile(source: string, data: any = {}): Promise<string> {
                               index += controlText.length + 1;
                               const bracketPair = getMatchingPair(source.substring(openBracketIndex));
                               if (bracketPair) {
-                                 await transpile(bracketPair.substring(1, bracketPair.length - 1), data)
+                                 let content = bracketPair.substring(1, bracketPair.length - 1);
+                                 if (content.charAt(0) === "\n") {
+                                    content = content.substring(1);
+                                 }
+                                 if (content.charAt(content.length - 1) === "\n") {
+                                    content = content.slice(0, -1);
+                                 }
+                                 await transpile(content, data)
                                     .then(script => {
                                        if (word === "function") {
                                           output += "{ return " + script + "; } __print(`";
                                        } else {
                                           output += "{ __print(" + script + "); } __print(`";
                                        }
-                                       index += bracketPair.length;
+                                       index += bracketPair.length - 1;
+                                       if (source.charAt(index) === "\n") {
+                                          index++;
+                                       }
                                     })
                                     .catch(error => reject(error));
                               } else {
@@ -216,7 +242,7 @@ function transpile(source: string, data: any = {}): Promise<string> {
                      break;
                }
             }
-            symbolPos = source.indexOf("@", index);
+            symbolPos = index >= 0 ? source.indexOf("@", index) : -1;
             if (symbolPos >= 0) {
                if (commentDepth === 0) {
                   output += `${source.substring(index, symbolPos)}`;
@@ -224,7 +250,7 @@ function transpile(source: string, data: any = {}): Promise<string> {
                index = source.indexOf("@", symbolPos);
             }
          } while (symbolPos >= 0);
-         if (commentDepth === 0) {
+         if (commentDepth === 0 && index >= 0) {
             output += source.substring(index);
          }
          output += "`";
@@ -236,6 +262,7 @@ function transpile(source: string, data: any = {}): Promise<string> {
 }
 
 /**
+ * Detect and return a variable or parenthetical group.
  * @param {string} text - detects .word, () or []
  */
 function getVariable(text: string): string {
@@ -252,6 +279,7 @@ function getVariable(text: string): string {
 }
 
 /**
+ * Gets the surrounding parenthesis or brackets and the text inside them.
  * @param {string} text - should begin with (, { or [
  */
 function getMatchingPair(text: string): string {
@@ -304,6 +332,7 @@ function getMatchingPair(text: string): string {
 }
 
 /**
+ * Gets the surrounding quotes and the text inside them.
  * @param {string} text - should begin with ', " or `
  */
 function getMatchingQuotes(text: string): string {
@@ -327,7 +356,7 @@ function getMatchingQuotes(text: string): string {
 }
 
 /**
- * Get the column number and line number from a source and index
+ * Get the column number and line number from a source and index.
  * @param {string} message - The error message to display
  * @param {string} source - The text containing multiple lines
  * @param {number} index - Location to get line number from
