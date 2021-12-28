@@ -56,19 +56,16 @@ export function compile(source: string, data: object = {}): Promise<string> {
          transpile(source, data)
             .then(async script => {
                const input = [
-                  "(async function() {",
                   generateScriptVariables(data),
                   "var __output = ''; ",
                   "var __include = async (path, data) => { __output += await compileFile(path, data); }; ",
                   "var __print = (text) => { __output += text; return text; }; ",
                   "__print(" + script + "); ",
                   "return __output; ",
-                  "})();",
                ];
-               const typeScript = ts.transpile(input.join(""));
-               // const torx = new Function(js);
-               const result = await eval(typeScript);
-               resolve(result);
+               const js = ts.transpile(input.join(""));
+               const torx = new Function(js);
+               resolve(torx());
             })
             .catch(error => {
                reject(error);
