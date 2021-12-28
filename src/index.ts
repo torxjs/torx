@@ -9,6 +9,8 @@ import * as fs from "fs";
 import * as ts from "typescript";
 import { TorxError } from "./torx-error";
 
+const AsyncFunction = Object.getPrototypeOf(async function () {}).constructor;
+
 /**
  * Output the Torx compiler for easy access with express.
  */
@@ -27,7 +29,7 @@ export function express(filePath: string, options: any, callback: Function) {
 /**
  * Compile from a Torx file and output the text results.
  */
-export function compileFile(filePath: string, data = {}): Promise<string> {
+export function compileFile(filePath: string, data: object = {}): Promise<string> {
    return new Promise((resolve, reject) => {
       if (fs.existsSync(filePath)) {
          fs.readFile(filePath, "utf8", (error, text) => {
@@ -54,18 +56,27 @@ export function compile(source: string, data: object = {}): Promise<string> {
    return new Promise<string>((resolve, reject) => {
       if (source.includes("@")) {
          transpile(source, data)
-            .then(async script => {
+            .then(script => {
+               const __data = {
+                  compileFile,
+               };
                const input = [
+                  "return (async () => {",
                   generateScriptVariables(data),
                   "var __output = ''; ",
-                  "var __include = async (path, data) => { __output += await compileFile(path, data); }; ",
+                  "var __include = async (path, data = {}) => { __output += await __data.compileFile(path, data); }; ",
                   "var __print = (text) => { __output += text; return text; }; ",
                   "__print(" + script + "); ",
                   "return __output; ",
+                  "})();",
                ];
                const js = ts.transpile(input.join(""));
-               const torx = new Function(js);
-               resolve(torx());
+               const torx = new AsyncFunction("__data", js);
+               torx(__data)
+                  .then(output => {
+                     resolve(output);
+                  })
+                  .catch(error => reject(error));
             })
             .catch(error => {
                reject(error);

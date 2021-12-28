@@ -9,6 +9,7 @@
     <head>
     </head>
     <body>
+        @include("./examples/svg/example.torx")
         <h1>@title</h1>
         @for (const key in ['a','b','c']) {
             @button(key)

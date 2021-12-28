@@ -33,19 +33,15 @@ if (isCLI) {
             console.log("  -h, --help      command line options\n");
             break;
          default:
-            if (args[1]) {
-               const startTime = performance.now();
-               const out = getOutPath(args[0], args[1]);
-               writeFile(args[0], out)
-                  .then(outPath => {
-                     const endTime = performance.now();
-                     const buildTime = (endTime - startTime).toFixed();
-                     console.log(`BUILD: ${outPath} (${buildTime} ms)`);
-                  })
-                  .catch(error => console.log("ERROR:", error));
-            } else {
-               console.log(`ERROR: Unknown command "${args[0]}".`);
-            }
+            const startTime = performance.now();
+            const out = getOutPath(args[0], args[1]);
+            writeFile(args[0], out)
+               .then(outPath => {
+                  const endTime = performance.now();
+                  const buildTime = (endTime - startTime).toFixed();
+                  console.log(`BUILD: ${outPath} (${buildTime} ms)`);
+               })
+               .catch(error => console.log(error));
             break;
       }
    } else {
