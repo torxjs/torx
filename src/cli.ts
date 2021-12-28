@@ -4,6 +4,7 @@
 
 import * as fs from "fs";
 import * as torx from ".";
+import { performance } from "perf_hooks";
 
 const args = process.argv.slice(2);
 
@@ -37,6 +38,7 @@ function writeFile(src: string, out: string): void {
    let sourceName = src;
    let sourceExtension = "torx";
    let outPath = out;
+   const startTime = performance.now();
    const matchFileName = /(?<name>.*)\.(?<extension>.*)/.exec(src);
    if (matchFileName) {
       sourceName = matchFileName.groups.name;
@@ -51,7 +53,9 @@ function writeFile(src: string, out: string): void {
       .then(text => {
          fs.writeFile(outPath, text, error => {
             if (!error) {
-               console.log("BUILD:", outPath);
+               const endTime = performance.now();
+               const buildTime = (endTime - startTime).toFixed(2);
+               console.log(`BUILD: ${outPath} (${buildTime}ms)`);
             } else {
                console.log(error);
             }
