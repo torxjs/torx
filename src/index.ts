@@ -9,7 +9,7 @@ import * as fs from "fs";
 import * as ts from "typescript";
 import { TorxError } from "./torx-error";
 
-const AsyncFunction = Object.getPrototypeOf(async function () {}).constructor;
+const AsyncFunction: FunctionConstructor = Object.getPrototypeOf(async function () {}).constructor;
 
 /**
  * Output the Torx compiler for easy access with express.
@@ -57,9 +57,6 @@ export function compile(source: string, data: object = {}): Promise<string> {
       if (source.includes("@")) {
          transpile(source, data)
             .then(script => {
-               const __data = {
-                  compileFile,
-               };
                const input = [
                   "return (async () => {",
                   generateScriptVariables(data),
@@ -70,9 +67,17 @@ export function compile(source: string, data: object = {}): Promise<string> {
                   "return __output; ",
                   "})();",
                ];
-               const js = ts.transpile(input.join(""));
-               const torx = new AsyncFunction("__data", js);
-               torx(__data)
+               let torx: Function;
+               const file = input.join("");
+               const useTypeScript = true;
+               if (useTypeScript) {
+                  torx = new AsyncFunction("__data", ts.transpile(file));
+               } else {
+                  torx = new AsyncFunction("__data", file);
+               }
+               torx({
+                  compileFile,
+               })
                   .then(output => {
                      resolve(output);
                   })
@@ -212,6 +217,16 @@ function transpile(source: string, data: any = {}): Promise<string> {
                                  if (content.charAt(content.length - 1) === "\n") {
                                     content = content.slice(0, -1);
                                  }
+                                 // Begin else and else if
+                                 // const tempIndex = index + bracketPair.length;
+                                 // const precedingText = source.substring(tempIndex, tempIndex + "else ".length);
+                                 // if (word === "if" && precedingText === "else ") {
+                                 //    console.log(`if "${precedingText}"`); // DEV
+                                 //    // const nextBracketIndex = source.indexOf("{", tempIndex);
+                                 //    // if (nextBracketIndex !== -1) {
+                                 //    //    const nextBracketGroup = getMatchingPair(source.substring(nextBracketIndex));
+                                 //    // }
+                                 // }
                                  await transpile(content, data)
                                     .then(script => {
                                        if (word === "function") {
