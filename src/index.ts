@@ -63,10 +63,10 @@ export function compile(source: string, data: object = {}): Promise<string> {
                const input = [
                   "return (async () => {",
                   generateScriptVariables(data),
-                  "var __output = ''; ",
-                  "var __include = async (path, data = {}) => { __output += await __data.compileFile(path, data); }; ",
-                  "var __print = (text) => { __output += text; return text; }; ",
-                  "__print(" + script + "); ",
+                  "let __output = ''; ",
+                  "const __include = async (path, data = {}) => { __output += await __data.compileFile(path, data); }; ",
+                  "const print = (text) => { __output += text; return text; }; ",
+                  "print(" + script + "); ",
                   "return __output; ",
                   "})();",
                ];
@@ -183,7 +183,7 @@ function transpile(source: string, data: any = {}): Promise<string> {
                   case "{":
                      const bracketPair = getMatchingPair(source.substring(index));
                      if (bracketPair) {
-                        output += "`);" + bracketPair.substring(1, bracketPair.length - 1) + "__print(`";
+                        output += "`);" + bracketPair.substring(1, bracketPair.length - 1) + "print(`";
                         index += bracketPair.length;
                         if (source.charAt(index) === "\n") {
                            index++;
@@ -215,9 +215,9 @@ function transpile(source: string, data: any = {}): Promise<string> {
                                  await transpile(content, data)
                                     .then(script => {
                                        if (word === "function") {
-                                          output += "{ return " + script + "; } __print(`";
+                                          output += "{ return " + script + "; } print(`";
                                        } else {
-                                          output += "{ __print(" + script + "); } __print(`";
+                                          output += "{ print(" + script + "); } print(`";
                                        }
                                        index += bracketPair.length - 1;
                                        if (source.charAt(index) === "\n") {
@@ -234,7 +234,7 @@ function transpile(source: string, data: any = {}): Promise<string> {
                         } else if (word === "include") {
                            const parenthisis = getMatchingPair(source.substring(index + word.length));
                            const script = parenthisis.slice(1, -1);
-                           output += "`); await __include(" + script + "); __print(`";
+                           output += "`); await __include(" + script + "); print(`";
                            index += word.length + parenthisis.length;
                         } else {
                            const variable = getVariable(source.substring(index + word.length));

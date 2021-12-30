@@ -1,5 +1,9 @@
 @{
     const title = "Example";
+    const condition = "TRUE";
+    for (const key of ['a','b','c']) {
+        print(key);
+    }
 }
 @function button(label: string) {
     <button>@label</button>
@@ -9,10 +13,16 @@
     <head>
     </head>
     <body>
-        @include("./examples/svg/example.torx")
+        @// @include("./examples/svg/example.torx")
         <h1>@title</h1>
         @for (const key in ['a','b','c']) {
             @button(key)
         }
+
+        @// @if (condition) {
+        @//     <p>@condition</p>
+        @//     } else {
+        @//         <p>Not Found</p>
+        @//     }
     </body>
 </html>
