@@ -1,0 +1,75 @@
+@{
+   // TypeScript comment
+   const title: string = 'Torx';
+   function foo() {
+      return (
+         'foo'
+      );
+   }
+}
+<!DOCTYPE html>
+<html>
+   <head>
+      @//<title>@title</title>
+      <xml
+         lots=""
+         @* of="" *@
+         attributes=""/>
+   </xml>
+   <link @(name)-rel="stylesheet@otherWord" type="text/css" href="main.css">
+      Cool
+      <link attributes="">
+         cool</link>
+   </link>
+   <style>
+      html {
+         background: blue;
+         color: red;
+      }
+   </style>
+   <h1>Hi</h1>
+</head>
+<body>
+   (
+      // here
+      {
+         // here
+         "hahah": true
+      }
+   )
+   @function button(label: string) {
+      <button>@label</button>
+   }
+   <!-- XML comment -->
+   <h1>@title</h1>
+   <p>@supers.long['12321']</p>
+   <footer class=@name>
+      full.name@@domain.com
+   </footer>
+   >><<<>><>>>>>>
+   "HOW about this" 123
+   <div class="string" style=@styles quoted="@quote">
+      @for (const key in object) {
+         <li>@key</li>
+         @// } else {
+
+      }
+   </div>
+   @button('hello')
+</body>
+</html>
+
+// JSON comment
+"json": "string"
+"number": 21
+"constant": true
+
+{
+   // JSON comment
+   "json": "string"
+   "number": 21,
+   "empty": null,
+   "moreJson": {
+      "word": true
+   }
+}
