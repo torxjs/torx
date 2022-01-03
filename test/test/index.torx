@@ -51,8 +51,8 @@
    <div class="string" style=@styles quoted="@quote">
       @for (const key in object) {
          <li>@key</li>
-         @// } else {
-
+      } else {
+         <strong>Null</strong>
       }
    </div>
    @button('hello')
