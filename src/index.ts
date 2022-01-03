@@ -52,7 +52,7 @@ export function compileFile(filePath: string, data: object = {}): Promise<string
 /**
  * Compile a Torx source and output the text results.
  */
-export function compile(source: string, data: object = {}): Promise<string> {
+export function compile(source: string, data = {}, typescript = true): Promise<string> {
    return new Promise<string>((resolve, reject) => {
       if (source.includes("@")) {
          transpile(source, data)
@@ -67,10 +67,9 @@ export function compile(source: string, data: object = {}): Promise<string> {
                   "return __output; ",
                   "})();",
                ];
-               let torx: Function;
                const file = input.join("");
-               const useTypeScript = true;
-               if (useTypeScript) {
+               let torx: Function;
+               if (typescript) {
                   torx = new AsyncFunction("__data", ts.transpile(file));
                } else {
                   torx = new AsyncFunction("__data", file);
@@ -202,7 +201,7 @@ function transpile(source: string, data: any = {}): Promise<string> {
                      if (match) {
                         const word = match[0];
                         if (["function", "for", "if"].indexOf(word) >= 0) {
-                           // TODO: skip first (params) group
+                           // TODO: skip first (params) group that may include {
                            const openBracketIndex = source.indexOf("{", index);
                            if (openBracketIndex >= 0) {
                               const controlText = source.substring(index, openBracketIndex);
@@ -211,30 +210,54 @@ function transpile(source: string, data: any = {}): Promise<string> {
                               const bracketPair = getMatchingPair(source.substring(openBracketIndex));
                               if (bracketPair) {
                                  let content = bracketPair.substring(1, bracketPair.length - 1);
+                                 // Remove newline after open bracket
                                  if (content.charAt(0) === "\n") {
                                     content = content.substring(1);
                                  }
+                                 // Remove newline after content
                                  if (content.charAt(content.length - 1) === "\n") {
                                     content = content.slice(0, -1);
                                  }
-                                 // Begin else and else if
-                                 // const tempIndex = index + bracketPair.length;
-                                 // const precedingText = source.substring(tempIndex, tempIndex + "else ".length);
-                                 // if (word === "if" && precedingText === "else ") {
-                                 //    console.log(`if "${precedingText}"`); // DEV
-                                 //    // const nextBracketIndex = source.indexOf("{", tempIndex);
-                                 //    // if (nextBracketIndex !== -1) {
-                                 //    //    const nextBracketGroup = getMatchingPair(source.substring(nextBracketIndex));
-                                 //    // }
-                                 // }
+                                 index += bracketPair.length - 1;
+
                                  await transpile(content, data)
-                                    .then(script => {
-                                       if (word === "function") {
-                                          output += "{ return " + script + "; } print(`";
-                                       } else {
-                                          output += "{ print(" + script + "); } print(`";
+                                    .then(async script => {
+                                       switch (word) {
+                                          case "function":
+                                             output += "{ return " + script + "; } print(`";
+
+                                             break;
+                                          case "if":
+                                             output += "{ print(" + script;
+                                             let precedingText = source.substring(index, index + " else ".length);
+                                             while (precedingText === " else ") {
+                                                const nextBracketIndex = source.indexOf("{", index);
+                                                const elseText = source.substring(index, nextBracketIndex + 1);
+                                                let nextBracketGroup;
+                                                if (nextBracketIndex !== -1) {
+                                                   output += "); }" + elseText + " print(";
+                                                   nextBracketGroup = getMatchingPair(
+                                                      source.substring(nextBracketIndex)
+                                                   );
+                                                } else {
+                                                   break;
+                                                }
+                                                let newContent = nextBracketGroup.substring(1, bracketPair.length - 1);
+                                                await transpile(newContent, data)
+                                                   .then(newScript => {
+                                                      output += newScript;
+                                                   })
+                                                   .catch(error => reject(error));
+                                                index = nextBracketIndex + nextBracketGroup.length;
+                                                precedingText = source.substring(index, index + " else ".length);
+                                             }
+                                             output += "); } print(`";
+                                             break;
+                                          default:
+                                             output += "{ print(" + script + "); } print(`";
+
+                                             break;
                                        }
-                                       index += bracketPair.length - 1;
                                        if (source.charAt(index) === "\n") {
                                           index++;
                                        }
@@ -279,7 +302,7 @@ function transpile(source: string, data: any = {}): Promise<string> {
          output += "`";
          resolve(output);
       } else {
-         resolve(source);
+         resolve("`" + source + "`");
       }
    });
 }
