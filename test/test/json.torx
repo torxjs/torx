@@ -1,0 +1,13 @@
+@{
+    const foo = "string";
+}
+{
+    // Json comment
+    "json": "string"
+    "bar": @foo,
+    "number": 21,
+    "empty": null,
+    "moreJson": {
+        "word": true
+    }
+}

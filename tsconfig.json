@@ -1,0 +1,11 @@
+{
+   "compilerOptions": {
+      "module": "CommonJS",
+      "outDir": "bin",
+      "rootDir": "src",
+      "removeComments": true
+   },
+   "exclude": [
+      "src/**/*.test.ts"
+    ]
+}

@@ -1,16 +1,26 @@
 {
-	"version": "2.0.0",
-	"tasks": [
-		{
-			"type": "npm",
-			"script": "test",
-			"group": {
-				"kind": "test",
-				"isDefault": true
-			},
-			"problemMatcher": [],
-			"label": "npm: test",
-			"detail": "node test"
-		}
-	]
+   "version": "2.0.0",
+   "tasks": [
+      {
+         "type": "npm",
+         "script": "test",
+         "group": {
+            "kind": "test",
+            "isDefault": true
+         },
+         "problemMatcher": [],
+         "label": "Jest: Test"
+      },
+      {
+         "type": "typescript",
+         "tsconfig": "tsconfig.json",
+         "option": "watch",
+         "problemMatcher": ["$tsc-watch"],
+         "group": {
+            "kind": "build",
+            "isDefault": true
+         },
+         "label": "TypeScript: Watch"
+      }
+   ]
 }

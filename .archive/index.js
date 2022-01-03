@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 /**
- * Created by Slulego 2020
+ * Created by Stephen Ullom (Slulego) 2020-2021
  * Forked from Saker by Sky
  * MIT Licensed
  */
@@ -374,7 +374,7 @@
 
                 // If not inside quotes
                 if (quotes.length === 0) {
-                    
+
                     switch (char) {
                         case '(':
                             brackets.push(this.position);
@@ -897,6 +897,27 @@
     var torx = {
 
         /**
+         * Render Torx file
+         * @param {string} filename
+         * @param {object} data
+         * @returns {string}
+         */
+        renderFile: function (filename, data) {
+            let output = '';
+            let _filename = getFileWithExt(filename);
+            try {
+                file = fs.readFileSync(_filename, 'utf8');
+                configure.defaultLayout = ''
+                output = torx.compile(file)(data);
+            } catch (error) {
+                console.error(error);
+            }
+            return output;
+        },
+
+        // LEGACY
+
+        /**
          * Combine config object.
          * @param passObj
          */
@@ -1151,7 +1172,7 @@
          * @param {function} callback
          */
 
-        renderView: function (url, data, callback) {
+        renderFile: function (url, data, callback) {
 
             var cb = function (err, html) {
                 if (err) {
@@ -1258,7 +1279,7 @@
                         configure.defaultLayout = ''
                         // configure.debug = true
 
-                        torx.renderView(source, {}, function (error, html) {
+                        torx.renderFile(source, {}, function (error, html) {
                             if (error) {
                                 console.log(error)
                             } else {

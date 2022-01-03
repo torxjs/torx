@@ -1,6 +1,6 @@
 # Torx
 
-Generate files with JavaScript.
+The fast and beautiful JavaScript template engine.
 
 ## Quick Links
 
