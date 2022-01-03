@@ -21,10 +21,10 @@
 
         @if (condition) {
             <h2>@condition</h2>
-            } else if (condition === "TRUE") {
-                <p>@condition</p>
-                } else {
-                    <p>Not Found</p>
-                }
-            </body>
-        </html>
+        } else if (condition === "TRUE") {
+            <p>@condition</p>
+        } else {
+            <p>Not Found</p>
+        }
+    </body>
+</html>
