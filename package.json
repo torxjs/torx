@@ -44,9 +44,10 @@
    },
    "scripts": {
       "start": "node ./bin/cli.js test/test html",
-      "test": "jest --watch"
+      "test": "jest --watch a"
    },
    "devDependencies": {
+      "@types/babel__core": "^7.1.18",
       "@types/jest": "^27.0.3",
       "@types/node": "^16.7.10",
       "@typescript-eslint/eslint-plugin": "^5.4.0",
