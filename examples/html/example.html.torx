@@ -1,0 +1,30 @@
+@{
+    const title = "Example";
+    const condition = "TRUE";
+    for (const key of ['a','b','c']) {
+        print(key);
+    }
+}
+@function button(label: string) {
+    <button>@label</button>
+}
+<!DOCTYPE html>
+<html>
+    <head>
+    </head>
+    <body>
+        @// @include("./examples/svg/example.torx")
+        <h1>@title</h1>
+        @for (const key in ['a','b','c']) {
+            @button(key)
+        }
+
+        @if (condition) {
+            <h2>@condition</h2>
+        } else if (condition === "TRUE") {
+            <p>@condition</p>
+        } else {
+            <p>Not Found</p>
+        }
+    </body>
+</html>

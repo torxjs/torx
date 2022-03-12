@@ -1,31 +1,60 @@
 {
-	"name": "torx",
-	"version": "0.2.1",
-	"description": "Generate files with JavaScript.",
-	"author": "stephen-ullom, slulego, sky",
-	"license": "MIT",
-	"repository": {
-		"type": "git",
-		"url": "git+https://github.com/slulego/torx.git"
-	},
-	"main": "index.js",
-	"bin": {
-		"torx": "index.js"
-	},
-	"scripts": {
-		"test": "node test"
-	},
-	"keywords": [
-		"template",
-		"engine",
-		"views",
-		"torx",
-		"express",
-		"js",
-		"html"
-	],
-	"bugs": {
-		"url": "https://github.com/slulego/torx/issues"
-	},
-	"homepage": "https://github.com/slulego/torx/wiki"
+   "name": "torx",
+   "version": "0.3.0",
+   "description": "Torx formatting, syntax and snippets for Visual Studio Code",
+   "author": {
+      "name": "Stephen Ullom",
+      "url": "http://stephenullom.com"
+   },
+   "homepage": "https://github.com/stephen-ullom/torx/wiki",
+   "repository": {
+      "type": "git",
+      "url": "git+https://github.com/stephen-ullom/torx.git"
+   },
+   "bugs": {
+      "url": "https://github.com/stephen-ullom/torx/issues"
+   },
+   "keywords": [
+      "torx",
+      "template",
+      "javascript"
+   ],
+   "main": "./bin/index.js",
+   "bin": {
+      "torx": "./bin/cli.js"
+   },
+   "prettier": {
+      "tabWidth": 3,
+      "printWidth": 120,
+      "arrowParens": "avoid"
+   },
+   "eslintConfig": {
+      "extends": [
+         "prettier"
+      ],
+      "parser": "@typescript-eslint/parser",
+      "rules": {
+         "no-extra-parens": "warn"
+      }
+   },
+   "jest": {
+      "preset": "ts-jest",
+      "testEnvironment": "node",
+      "rootDir": "src"
+   },
+   "scripts": {
+      "start": "node ./bin/cli.js test/test html",
+      "test": "jest --watch a"
+   },
+   "devDependencies": {
+      "@types/babel__core": "^7.1.18",
+      "@types/jest": "^27.0.3",
+      "@types/node": "^16.7.10",
+      "@typescript-eslint/eslint-plugin": "^5.4.0",
+      "@typescript-eslint/parser": "^5.4.0",
+      "eslint": "^8.3.0",
+      "eslint-config-prettier": "^8.3.0",
+      "ts-jest": "^27.0.7",
+      "typescript": "^4.5.2"
+   }
 }

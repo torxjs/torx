@@ -1,0 +1,33 @@
+@{
+    const title: string = 'Hello!';
+    const obj = {
+        array: ['abc', '123'],
+        child: {
+            name: 'child-name'
+        }
+    };
+    const arr = ['a', 'b', 'c'];
+    const imageUrl2 = function () {
+        return 'image/default2.png'
+    };
+}
+<html>
+    @function button(label: string, className?: string) {
+        <button class="@className">@label</button>
+    }
+    <h1>@title</h1>
+    <p>@(2 + 2)</p>
+    <p>@('Here is a super long (string) \' with a "bunch of \( strange \) things.`')</p>
+    <p>person@@mail.com</p>
+    <section>@button('BIG BUTTON')</section>
+    <div>
+        @obj.array[1][2]
+        @obj.child.name
+    </div>
+    <div class="image" style="background-image: url('@imageUrl2()')"></div>
+    <ul>
+        @for (const item of arr) {
+            <li>@item</li>
+        }
+    </ul>
+</html>

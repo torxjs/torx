@@ -1,4 +1,4 @@
-const torx = require('../')
+const torx = require('..')
 
 const output = torx.renderFile('example/example.torx', { title: 'Example Title' })
 
