@@ -49,6 +49,10 @@ export function compileFile(filePath: string, data: object = {}): Promise<string
    });
 }
 
+export function readFile(path: string, encoding: any = "utf-8"): any {
+   return fs.readFileSync(path, encoding);
+}
+
 /**
  * Compile a Torx source and output the text results.
  */
@@ -62,6 +66,7 @@ export function compile(source: string, data = {}, typescript = true): Promise<s
                   generateScriptVariables(data),
                   "let __output = ''; ",
                   "const __include = async (path, data = {}) => { __output += await __data.compileFile(path, data); }; ",
+                  "const file = (path, encoding) => { return __data.readFile(path, encoding); }; ",
                   "const print = (text) => { __output += text; return text; }; ",
                   "print(" + script + "); ",
                   "return __output; ",
@@ -76,6 +81,7 @@ export function compile(source: string, data = {}, typescript = true): Promise<s
                }
                torx({
                   compileFile,
+                  readFile,
                })
                   .then(output => {
                      resolve(output);

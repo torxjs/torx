@@ -1,9 +1,10 @@
-# 0.3.0
+# 1.0.0
 
-12 March 2022
+30 Apr 2022
 
 -  Add TypeScript support
 -  Add `@//` comments back.
+-  Add `file()` function.
 
 # 0.2.1
 
