@@ -1,8 +1,9 @@
-# 1.0.0
+# 0.3.0
 
 12 March 2022
 
 -  Add TypeScript support
+-  Add `@//` comments back.
 
 # 0.2.1
 

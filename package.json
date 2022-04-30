@@ -2,6 +2,7 @@
    "name": "torx",
    "version": "0.3.0",
    "description": "Torx formatting, syntax and snippets for Visual Studio Code",
+   "license": "MIT",
    "author": {
       "name": "Stephen Ullom",
       "url": "http://stephenullom.com"
@@ -43,7 +44,7 @@
       "rootDir": "src"
    },
    "scripts": {
-      "start": "node ./bin/cli.js test/test html",
+      "start": "node ./bin/cli.js",
       "test": "jest --watch a"
    },
    "devDependencies": {
@@ -54,7 +55,8 @@
       "@typescript-eslint/parser": "^5.4.0",
       "eslint": "^8.3.0",
       "eslint-config-prettier": "^8.3.0",
-      "ts-jest": "^27.0.7",
+      "jest": "^27.5.1",
+      "ts-jest": "^27.1.4",
       "typescript": "^4.5.2"
    }
 }
