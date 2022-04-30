@@ -2,16 +2,17 @@
    "version": "2.0.0",
    "tasks": [
       {
+         "label": "Jest | Test",
          "type": "npm",
          "script": "test",
          "group": {
             "kind": "test",
             "isDefault": true
          },
-         "problemMatcher": [],
-         "label": "Jest: Test"
+         "problemMatcher": []
       },
       {
+         "label": "TypeScript | Watch",
          "type": "typescript",
          "tsconfig": "tsconfig.json",
          "option": "watch",
@@ -19,8 +20,7 @@
          "group": {
             "kind": "build",
             "isDefault": true
-         },
-         "label": "TypeScript: Watch"
+         }
       }
    ]
 }
