@@ -1,0 +1,10 @@
+File content:
+@{
+    print('yep');
+    const data = file('./test/5/file.json');
+    const json = JSON.parse(data);
+}
+@file('./test/5/file.txt')
+@for (const key in json.list) {
+    @key
+}
