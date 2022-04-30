@@ -34,14 +34,21 @@ if (isCLI) {
             break;
          default:
             const startTime = performance.now();
-            const out = getOutPath(args[0], args[1]);
-            writeFile(args[0], out)
-               .then(outPath => {
-                  const endTime = performance.now();
-                  const buildTime = (endTime - startTime).toFixed();
-                  console.log(`BUILD: ${outPath} (${buildTime} ms)`);
-               })
-               .catch(error => console.log(error));
+            let out;
+            try {
+               out = getOutPath(args[0], args[1]);
+            } catch (error) {
+               console.log("ERROR:", error);
+            }
+            if (out) {
+               writeFile(args[0], out)
+                  .then(outPath => {
+                     const endTime = performance.now();
+                     const buildTime = (endTime - startTime).toFixed();
+                     console.log(`BUILD: ${outPath} (${buildTime} ms)`);
+                  })
+                  .catch(error => console.log(error));
+            }
             break;
       }
    } else {
@@ -85,10 +92,10 @@ export function getOutPath(arg1: string, arg2?: string): string {
             fileName.pop();
             return fileName.join(".");
          } else {
-            throw new Error("A symantic file name must end in '.torx'");
+            throw "A symantic file name must end in '.torx'";
          }
       } else {
-         throw new Error("A symantic file name or an out path is required");
+         throw "A symantic file name or an out path is required";
       }
    } else {
       if (arg2.indexOf(".") >= 0) {
@@ -101,7 +108,7 @@ export function getOutPath(arg1: string, arg2?: string): string {
             fileName.push(arg2);
             return fileName.join(".");
          } else {
-            throw new Error("When providing an extension name, the source file must end in '.torx'");
+            throw "When providing an extension name, the source file must end in '.torx'";
          }
       }
    }
