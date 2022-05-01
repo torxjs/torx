@@ -47,6 +47,9 @@
       "start": "node ./bin/cli.js",
       "test": "jest --watch a"
    },
+   "files": [
+      "bin"
+   ],
    "devDependencies": {
       "@types/babel__core": "^7.1.18",
       "@types/jest": "^27.0.3",
