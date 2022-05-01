@@ -286,10 +286,10 @@ function transpile(source: string, data: any = {}): Promise<string> {
                         } else {
                            const variable = getVariable(source.substring(index + word.length));
                            if (variable) {
-                              output += "` + (" + word + variable + " || '') + `";
+                              output += "` + (" + word + variable + ") + `";
                               index += word.length + variable.length;
                            } else {
-                              output += "` + (" + word + " || '') + `";
+                              output += "` + (" + word + ") + `";
                               index += word.length;
                            }
                         }
