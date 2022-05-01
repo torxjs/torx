@@ -1,10 +1,17 @@
 File content:
+
 @{
-    print('yep');
     const data = file('./test/5/file.json');
     const json = JSON.parse(data);
+    @// print(Object.keys(__data));
+    @// print(typeof json);
+    @// print(Object.keys(fs));
 }
-@file('./test/5/file.txt')
-@for (const key in json.list) {
-    @key
-}
+
+Hello?
+@// @file('./test/5/file.txt')
+<ul>
+    @for (const key in json.list) {
+        <li>@key</li>
+    }
+</ul>
