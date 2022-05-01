@@ -58,7 +58,9 @@ export function compile(source: string, data = {}): Promise<string> {
                   .then(output => {
                      resolve(output);
                   })
-                  .catch(error => reject(error));
+                  .catch(error => {
+                     reject(error);
+                  });
             })
             .catch(error => {
                reject(error);
@@ -130,10 +132,10 @@ function generateScriptVariables(data: any): string {
  */
 function transpile(source: string, data: any = {}): Promise<string> {
    return new Promise<string>(async (resolve, reject) => {
+      // Remove all @// comments
+      source = source.replace(/@\/\/.*(?=\n)/g, "");
       let symbolPos = source.indexOf("@");
       if (symbolPos >= 0) {
-         // Remove all @// comments
-         source = source.replace(/@\/\/.*/g, "");
          let output = "`" + source.substring(0, symbolPos);
          let index = symbolPos;
          let commentDepth = 0;

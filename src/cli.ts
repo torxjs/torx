@@ -93,7 +93,7 @@ function createFile(sourcePath: string, outPath: string): Promise<string> {
  * @param arg1 - file path ending in ".torx"
  * @param arg2 - out file path or file extension
  */
-function getOutPath(arg1: string, arg2?: string): string {
+export function getOutPath(arg1: string, arg2?: string): string {
    let fileName = arg1.split(".");
    if (!arg2) {
       if (fileName.length >= 3) {
