@@ -73,6 +73,7 @@ export function compile(source: string, data = {}, typescript = true): Promise<s
                   "})();",
                ];
                const file = input.join("");
+               console.log(file); // DEV
                let torx: Function;
                if (typescript) {
                   torx = new AsyncFunction("__data", ts.transpile(file));
@@ -154,6 +155,8 @@ function transpile(source: string, data: any = {}): Promise<string> {
    return new Promise<string>(async (resolve, reject) => {
       let symbolPos = source.indexOf("@");
       if (symbolPos >= 0) {
+         // Remove all @// comments
+         source = source.replace(/@\/\/.*/g, "");
          let output = "`" + source.substring(0, symbolPos);
          let index = symbolPos;
          let commentDepth = 0;
