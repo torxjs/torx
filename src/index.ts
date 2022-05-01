@@ -27,35 +27,6 @@ export function express(filePath: string, options: any, callback: Function) {
 }
 
 /**
- * Compile a Torx file and return the output.
- * @param path - file path to Torx file
- * @param data - optional values to pass into the template
- */
-export function compileFile(path: string, data = {}): Promise<string> {
-   return new Promise((resolve, reject) => {
-      if (fs.existsSync(path)) {
-         fs.readFile(path, "utf8", (error, text) => {
-            if (!error) {
-               compile(text, data)
-                  .then(out => {
-                     resolve(out);
-                  })
-                  .catch(error => reject(error));
-            } else {
-               reject(`Could not read file ${path}`);
-            }
-         });
-      } else {
-         reject(`No file exists at '${path}'`);
-      }
-   });
-}
-
-export function readFile(path: string, encoding: any = "utf-8"): any {
-   return fs.readFileSync(path, encoding);
-}
-
-/**
  * Compile a Torx source and return the output.
  * @param source - Torx code
  * @param data - optional values to pass into the template
@@ -99,33 +70,39 @@ export function compile(source: string, data = {}): Promise<string> {
 }
 
 /**
- * Transpile a Torx document into TypeScript.
+ * Compile a Torx file and return the output.
+ * @param path - file path to Torx file
+ * @param data - optional values to pass into the template
  */
-function transpileFile(filePath: string, data?: any): Promise<string> {
+function compileFile(path: string, data = {}): Promise<string> {
    return new Promise((resolve, reject) => {
-      if (fs.existsSync(filePath)) {
-         fs.readFile(filePath, "utf8", (error, fileData) => {
+      if (fs.existsSync(path)) {
+         fs.readFile(path, "utf8", (error, text) => {
             if (!error) {
-               transpile(fileData, data)
+               compile(text, data)
                   .then(out => {
                      resolve(out);
                   })
-                  .catch(
-                     // TODO: Fix filePath
-                     (error: TorxError) => reject(error.setFileName(filePath))
-                  );
+                  .catch(error => reject(error));
             } else {
-               reject(new TorxError(`Could not read file ${filePath}`));
+               reject(`Could not read file ${path}`);
             }
          });
       } else {
-         reject(new TorxError(`No file exists at '${filePath}'`));
+         reject(`No file exists at '${path}'`);
       }
    });
 }
 
 /**
- * Converts variable data into raw JavaScript.
+ * Get text content of a file
+ */
+function readFile(path: string, encoding: any = "utf-8"): any {
+   return fs.readFileSync(path, encoding);
+}
+
+/**
+ * Convert variable data into raw JavaScript.
  */
 function generateScriptVariables(data: any): string {
    let output = "";

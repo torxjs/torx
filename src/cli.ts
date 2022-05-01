@@ -58,23 +58,33 @@ if (isCLI) {
 
 /**
  * Compiles and creates the the output file
- * @param source - the torx file path
+ * @param path - the Torx file path
  * @param out - the output file path
  */
-function writeFile(source: string, out: string): Promise<string> {
+function writeFile(path: string, out: string): Promise<string> {
    return new Promise<string>((resolve, reject) => {
-      torx
-         .compileFile(source)
-         .then(text => {
-            fs.writeFile(out, text, error => {
-               if (!error) {
-                  resolve(out);
-               } else {
-                  reject(error);
-               }
-            });
-         })
-         .catch(error => reject(error));
+      if (fs.existsSync(path)) {
+         fs.readFile(path, "utf8", (error, text) => {
+            if (!error) {
+               torx
+                  .compile(text)
+                  .then(out => {
+                     fs.writeFile(out, text, error => {
+                        if (!error) {
+                           resolve(out);
+                        } else {
+                           reject(error);
+                        }
+                     });
+                  })
+                  .catch(error => reject(error));
+            } else {
+               reject(`Could not read file ${path}`);
+            }
+         });
+      } else {
+         reject(`No file exists at '${path}'`);
+      }
    });
 }
 
@@ -83,7 +93,7 @@ function writeFile(source: string, out: string): Promise<string> {
  * @param arg1 - file path ending in ".torx"
  * @param arg2 - out file path or file extension
  */
-export function getOutPath(arg1: string, arg2?: string): string {
+function getOutPath(arg1: string, arg2?: string): string {
    let fileName = arg1.split(".");
    if (!arg2) {
       if (fileName.length >= 3) {
