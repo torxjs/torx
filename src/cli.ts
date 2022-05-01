@@ -41,7 +41,7 @@ if (isCLI) {
                console.log("ERROR:", error);
             }
             if (out) {
-               writeFile(args[0], out)
+               createFile(args[0], out)
                   .then(outPath => {
                      const endTime = performance.now();
                      const buildTime = (endTime - startTime).toFixed();
@@ -58,20 +58,20 @@ if (isCLI) {
 
 /**
  * Compiles and creates the the output file
- * @param path - the Torx file path
- * @param out - the output file path
+ * @param sourcePath - the Torx file path
+ * @param outPath - the output file path
  */
-function writeFile(path: string, out: string): Promise<string> {
+function createFile(sourcePath: string, outPath: string): Promise<string> {
    return new Promise<string>((resolve, reject) => {
-      if (fs.existsSync(path)) {
-         fs.readFile(path, "utf8", (error, text) => {
+      if (fs.existsSync(sourcePath)) {
+         fs.readFile(sourcePath, "utf8", (error, text) => {
             if (!error) {
                torx
                   .compile(text)
                   .then(out => {
-                     fs.writeFile(out, text, error => {
+                     fs.writeFile(outPath, out, error => {
                         if (!error) {
-                           resolve(out);
+                           resolve(outPath);
                         } else {
                            reject(error);
                         }
@@ -79,11 +79,11 @@ function writeFile(path: string, out: string): Promise<string> {
                   })
                   .catch(error => reject(error));
             } else {
-               reject(`Could not read file ${path}`);
+               reject(`Could not read file ${sourcePath}`);
             }
          });
       } else {
-         reject(`No file exists at '${path}'`);
+         reject(`No file exists at '${sourcePath}'`);
       }
    });
 }
