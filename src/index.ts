@@ -12,10 +12,10 @@ import { TorxError } from "./torx-error";
 const AsyncFunction: FunctionConstructor = Object.getPrototypeOf(async function () {}).constructor;
 
 /**
- * Output the Torx compiler for easy access with express.
+ * Torx template engine for Express.
  */
-export function express(filePath: string, options: any, callback: Function) {
-   fs.readFile(filePath, "utf8", (error, data) => {
+export function express(path: string, options: any, callback: Function) {
+   fs.readFile(path, "utf8", (error, data) => {
       if (!error) {
          compile(data, options)
             .then(out => callback(null, out))
