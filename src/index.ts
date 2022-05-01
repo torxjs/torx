@@ -27,12 +27,14 @@ export function express(filePath: string, options: any, callback: Function) {
 }
 
 /**
- * Compile from a Torx file and output the text results.
+ * Compile a Torx file and return the output.
+ * @param path - file path to Torx file
+ * @param data - optional values to pass into the template
  */
-export function compileFile(filePath: string, data: object = {}): Promise<string> {
+export function compileFile(path: string, data = {}): Promise<string> {
    return new Promise((resolve, reject) => {
-      if (fs.existsSync(filePath)) {
-         fs.readFile(filePath, "utf8", (error, text) => {
+      if (fs.existsSync(path)) {
+         fs.readFile(path, "utf8", (error, text) => {
             if (!error) {
                compile(text, data)
                   .then(out => {
@@ -40,11 +42,11 @@ export function compileFile(filePath: string, data: object = {}): Promise<string
                   })
                   .catch(error => reject(error));
             } else {
-               reject(`Could not read file ${filePath}`);
+               reject(`Could not read file ${path}`);
             }
          });
       } else {
-         reject(`No file exists at '${filePath}'`);
+         reject(`No file exists at '${path}'`);
       }
    });
 }
@@ -54,9 +56,11 @@ export function readFile(path: string, encoding: any = "utf-8"): any {
 }
 
 /**
- * Compile a Torx source and output the text results.
+ * Compile a Torx source and return the output.
+ * @param source - Torx code
+ * @param data - optional values to pass into the template
  */
-export function compile(source: string, data = {}, typescript = true): Promise<string> {
+export function compile(source: string, data = {}): Promise<string> {
    return new Promise<string>((resolve, reject) => {
       if (source.includes("@")) {
          transpile(source, data)
@@ -73,13 +77,9 @@ export function compile(source: string, data = {}, typescript = true): Promise<s
                   "})();",
                ];
                const file = input.join("");
-               console.log(file); // DEV
-               let torx: Function;
-               if (typescript) {
-                  torx = new AsyncFunction("__data", ts.transpile(file));
-               } else {
-                  torx = new AsyncFunction("__data", file);
-               }
+               const torx = new AsyncFunction("__data", ts.transpile(file));
+               // Without TypeScript
+               // torx = new AsyncFunction("__data", file);
                torx({
                   compileFile,
                   readFile,
