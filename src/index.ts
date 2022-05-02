@@ -127,8 +127,8 @@ function generateScriptVariables(data: any): string {
 
 /**
  * Transpile a Torx document into TypeScript.
- * @param {string} source - Text containing Torx syntax
- * @param {any} data - Data to include in the scope
+ * @param {string} source - text containing Torx syntax
+ * @param {any} data - data to include in the scope
  */
 function transpile(source: string, data: any = {}): Promise<string> {
    return new Promise<string>(async (resolve, reject) => {
@@ -391,9 +391,9 @@ function getMatchingQuotes(text: string): string {
 
 /**
  * Get the column number and line number from a source and index.
- * @param {string} message - The error message to display
- * @param {string} source - The text containing multiple lines
- * @param {number} index - Location to get line number from
+ * @param {string} message - error message to display
+ * @param {string} source - text containing multiple lines
+ * @param {number} index - location to get line number from
  */
 function generateTorxError(message: string, source: string, index: number): TorxError {
    const leadingText = source.substring(0, index);
