@@ -74,18 +74,23 @@ describe("compile", () => {
    });
 
    describe("single line comment", () => {
-      it("@// @title inside comment", async () => {
+      it("@/ @title inside comment", async () => {
          await torxTest({
-            template: "@// @title inside comment",
-            data: { title: "My Title" },
+            template: "@/ @title inside comment",
             output: "",
          });
       });
 
-      it("<h1>There is no @// @title inside\\ncomment</h1>", async () => {
+      it("<h1>@@/ this is not a comment /@@</h1>", async () => {
          await torxTest({
-            template: "<h1>There is no @// @title inside\ncomment</h1>",
-            data: { title: "My Title" },
+            template: "<h1>@@/ this is not a comment /@@</h1>",
+            output: "<h1>@/ this is not a comment /@</h1>",
+         });
+      });
+
+      it("<h1>There is no @/ @title inside\\ncomment</h1>", async () => {
+         await torxTest({
+            template: "<h1>There is no @/ @title inside\ncomment</h1>",
             output: "<h1>There is no \ncomment</h1>",
          });
       });

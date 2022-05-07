@@ -132,8 +132,8 @@ function generateScriptVariables(data: any): string {
  */
 function transpile(source: string, data: any = {}): Promise<string> {
    return new Promise<string>(async (resolve, reject) => {
-      // Remove all @// comments
-      source = source.replace(/@\/\/.*(?=\n)/g, "");
+      // Remove all @/ comments if not @@/
+      source = source.replace(/(?<!@)@\/.*$/gm, "");
       let symbolPos = source.indexOf("@");
       if (symbolPos >= 0) {
          let output = "`" + source.substring(0, symbolPos);
