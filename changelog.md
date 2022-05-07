@@ -3,8 +3,8 @@
 30 Apr 2022
 
 -  Add TypeScript support
--  Add `@//` comments back.
--  Add `file()` function.
+-  Add single line comment back as `@/`.
+-  Add `file()` function to get file text.
 
 # 0.2.1
 
