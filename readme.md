@@ -1,71 +1,45 @@
 # Torx
 
-The TypeScript template engine for Node.
+Torx is the TypeScript template engine for Node.
 
-# Command Line Interface
+## Installation
 
-## Compile
-
-There are a few ways to compile this file.
-
--  Providing the output file extension.
--  Using a semantic file name.
--  Providing an output file name.
-
-### File Extension
-
-For this example, create a torx file named `index.torx`.
-To set the output file extension, just provide it using this format:
-
-> torx [filename] [extension]
-
-Compile to HTML file:
+Torx is designed to run from the command line, as an [Express](https://expressjs.com) template engine, or as a Node package.
 
 ```
-torx index.torx html
+npm install -g torx
 ```
 
-This will create `index.html` in the same directory as `index.torx`.
+## Syntax
 
-### Semantic File Name
+Execute and render TypeScript variables using the `@` symbol.
 
-An alternative method is to name each file with the desired output.
-For example `update.sql.torx`.
-
-To compile, no more information is required than the source file name.
-
-> torx [filename]
-
-```
-torx update.sql.torx
+```xml
+<button>@label</button>
 ```
 
-This will omit the `.torx` extension and create `update.sql`
+Escape `@` by using it twice, `@@`.
 
-### Out File Path
-
-To explicitly set the output file, provide the full path:
-
-> torx [filename] [output]
-
-Example:
-
-```
-torx src/data.torx bin/data.json
+```xml
+<p>@@username</p>
 ```
 
-This will create `data.json` in the bin folder.
+This example creates a square with 5 stripes.
 
-## Version
+```xml
+@{
+   const imageSize = 200;
+   const stripeHeight = 20;
+}
+<svg width="@imageSize" height="@imageSize" xmlns="http://www.w3.org/2000/svg">
+   @for (let index = 0; index < 5; index++) {
+      <rect x="0" y="@(index * stripeHeight * 2)" width="@imageSize" height="@stripeHeight" />
+   }
+</svg>
+```
 
-To get the installed version of Torx:
+## Usage
 
 ```
-torx --version
-```
-
-Or use the shorthand
-
-```
-torx -v
+torx file.torx out/file.html
 ```
