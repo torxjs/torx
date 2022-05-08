@@ -7,13 +7,13 @@
       "name": "Stephen Ullom",
       "url": "http://stephenullom.com"
    },
-   "homepage": "https://github.com/stephen-ullom/torx/wiki",
+   "homepage": "https://github.com/torxjs/torx/wiki",
    "repository": {
       "type": "git",
-      "url": "git+https://github.com/stephen-ullom/torx.git"
+      "url": "git+https://github.com/torxjs/torx.git"
    },
    "bugs": {
-      "url": "https://github.com/stephen-ullom/torx/issues"
+      "url": "https://github.com/torxjs/torx/issues"
    },
    "keywords": [
       "torx",
@@ -23,6 +23,16 @@
    "main": "./bin/index.js",
    "bin": {
       "torx": "./bin/cli.js"
+   },
+   "scripts": {
+      "start": "node ./bin/cli.js",
+      "test": "jest --watchAll --verbose"
+   },
+   "files": [
+      "bin"
+   ],
+   "dependencies": {
+      "typescript": "^4.5.2"
    },
    "prettier": {
       "tabWidth": 3,
@@ -42,16 +52,6 @@
       "preset": "ts-jest",
       "testEnvironment": "node",
       "rootDir": "src"
-   },
-   "scripts": {
-      "start": "node ./bin/cli.js",
-      "test": "jest --watchAll --verbose"
-   },
-   "files": [
-      "bin"
-   ],
-   "dependencies": {
-      "typescript": "^4.5.2"
    },
    "devDependencies": {
       "@types/jest": "^27.0.3",
