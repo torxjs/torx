@@ -1,10 +1,10 @@
 # 1.0.0
 
-30 Apr 2022
+8 May 2022
 
--  Add TypeScript support
+-  Rebuild to support TypeScript
 -  Add single line comment back as `@/`.
--  Add `file()` function to get file text.
+-  Add `file()` to read text from a file.
 
 # 0.2.1
 
