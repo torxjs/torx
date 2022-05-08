@@ -14,12 +14,17 @@ const AsyncFunction: FunctionConstructor = Object.getPrototypeOf(async function 
 /**
  * Torx template engine for Express.
  */
-export function express(path: string, options: any, callback: Function) {
-   fs.readFile(path, "utf8", (error, data) => {
+export function express(filePath: string, options: any, callback: Function) {
+   fs.readFile(filePath, "utf8", (error, data) => {
       if (!error) {
          compile(data, options)
             .then(out => callback(null, out))
-            .catch((error: TorxError) => callback(error));
+            .catch((error: TorxError) => {
+               if (!error.fileName) {
+                  error.fileName = filePath;
+               }
+               callback(error);
+            });
       } else {
          callback(error);
       }
@@ -272,6 +277,8 @@ function transpile(source: string, data: any = {}): Promise<string> {
                               index += word.length;
                            }
                         }
+                     } else {
+                        reject(generateTorxError(`Unexpected token ${source.charAt(index)}`, source, index));
                      }
                      break;
                }
@@ -400,5 +407,5 @@ function generateTorxError(message: string, source: string, index: number): Torx
    const leadingLines = leadingText.split("\n");
    const lineNumber = leadingLines.length;
    const columnNumber = leadingLines[lineNumber - 1].length;
-   return new TorxError(message, columnNumber, lineNumber);
+   return new TorxError(message, { columnNumber, lineNumber, source });
 }
