@@ -1,6 +1,6 @@
 # Torx
 
-TypeScript template engine for NodeJS
+The TypeScript template engine for Node.
 
 # Command Line Interface
 
