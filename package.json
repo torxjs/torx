@@ -45,7 +45,7 @@
    },
    "scripts": {
       "start": "node ./bin/cli.js",
-      "test": "jest --watchAll"
+      "test": "jest --watchAll --verbose"
    },
    "files": [
       "bin"

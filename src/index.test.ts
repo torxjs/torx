@@ -1,19 +1,25 @@
 import { compile } from "./index";
 
-async function torxTest(object: { template: string; data?: object; output: string }): Promise<void> {
-   await expect(compile(object.template, object.data)).resolves.toEqual(object.output);
+async function torxTest(object: { template: string | string[]; data?: object; output: string }): Promise<void> {
+   let template;
+   if (Array.isArray(object.template)) {
+      template = object.template.join("");
+   } else {
+      template = object.template;
+   }
+   await expect(compile(template, object.data)).resolves.toEqual(object.output);
 }
 
 describe("compile", () => {
-   describe("plain text", () => {
-      it("Title", async () => {
+   describe("basic", () => {
+      it("text only", async () => {
          await torxTest({
             template: "Title",
             output: "Title",
          });
       });
 
-      it("name@@domain.com", async () => {
+      it("escape @", async () => {
          await torxTest({
             template: "name@@domain.com",
             output: "name@domain.com",
@@ -21,8 +27,48 @@ describe("compile", () => {
       });
    });
 
+   describe("single line comment", () => {
+      it("comment only", async () => {
+         await torxTest({
+            template: "@/ @title inside comment",
+            output: "",
+         });
+      });
+
+      it("escape comment", async () => {
+         await torxTest({
+            template: "<h1>@@/ this is not a comment /@@</h1>",
+            output: "<h1>@/ this is not a comment /@</h1>",
+         });
+      });
+
+      it("comment inside element", async () => {
+         await torxTest({
+            template: "<h1>There is no @/ @title inside\ncomment</h1>",
+            output: "<h1>There is no \ncomment</h1>",
+         });
+      });
+   });
+
+   describe("multiline comment", () => {
+      it("comment only", async () => {
+         await torxTest({
+            template: "@* @title inside comment *@",
+            output: "",
+         });
+      });
+
+      it("comment inside element", async () => {
+         await torxTest({
+            template: "<h1>There is no @* @title inside comment *@</h1>",
+            data: { title: "My Title" },
+            output: "<h1>There is no </h1>",
+         });
+      });
+   });
+
    describe("implicit", () => {
-      it("@title", async () => {
+      it("variable only", async () => {
          await torxTest({
             template: "@title",
             data: { title: "My Title" },
@@ -30,7 +76,7 @@ describe("compile", () => {
          });
       });
 
-      it("<h1>@title<h1>", async () => {
+      it("variable inside element", async () => {
          await torxTest({
             template: "<h1>@title<h1>",
             data: { title: "My Title" },
@@ -38,7 +84,7 @@ describe("compile", () => {
          });
       });
 
-      it("@getTitle()", async () => {
+      it("call function from data", async () => {
          await torxTest({
             template: "@getTitle()",
             data: { getTitle: () => "My Title" },
@@ -46,7 +92,7 @@ describe("compile", () => {
          });
       });
 
-      it("@caps('My Title')", async () => {
+      it("call function from data with parameter", async () => {
          await torxTest({
             template: "@caps('My Title')",
             data: { caps: (param: string) => param.toUpperCase() },
@@ -56,7 +102,7 @@ describe("compile", () => {
    });
 
    describe("explicit", () => {
-      it("@(title)", async () => {
+      it("variable using parentheses", async () => {
          await torxTest({
             template: "@(title)",
             data: { title: "My Title" },
@@ -64,7 +110,7 @@ describe("compile", () => {
          });
       });
 
-      it("<h1>@(title)</h1>", async () => {
+      it("variable using parentheses inside element", async () => {
          await torxTest({
             template: "<h1>@(title)</h1>",
             data: { title: "My Title" },
@@ -73,43 +119,58 @@ describe("compile", () => {
       });
    });
 
-   describe("single line comment", () => {
-      it("@/ @title inside comment", async () => {
+   describe("if", () => {
+      it("compact if", async () => {
          await torxTest({
-            template: "@/ @title inside comment",
-            output: "",
+            template: "@if(condition){Hello}",
+            data: { condition: true },
+            output: "Hello",
          });
       });
 
-      it("<h1>@@/ this is not a comment /@@</h1>", async () => {
+      it("if with spaces", async () => {
          await torxTest({
-            template: "<h1>@@/ this is not a comment /@@</h1>",
-            output: "<h1>@/ this is not a comment /@</h1>",
+            template: "@if ( condition ) { Hello }",
+            data: { condition: true },
+            output: " Hello ",
          });
       });
 
-      it("<h1>There is no @/ @title inside\\ncomment</h1>", async () => {
+      it("if with brackets inside group", async () => {
          await torxTest({
-            template: "<h1>There is no @/ @title inside\ncomment</h1>",
-            output: "<h1>There is no \ncomment</h1>",
+            template: "@if(condition({value:true})){Hello}",
+            data: { condition: () => true },
+            output: "Hello",
+         });
+      });
+
+      it("if with spaces and brackets inside group", async () => {
+         await torxTest({
+            template: "@if ( condition( { value: true } ) ) { Hello }",
+            data: { condition: () => true },
+            output: " Hello ",
          });
       });
    });
 
-   describe("multiline comment", () => {
-      it("@* @title inside comment *@", async () => {
+   describe("function", () => {
+      it("compact function only", async () => {
          await torxTest({
-            template: "@* @title inside comment *@",
-            data: { title: "My Title" },
-            output: "",
+            template: "@function button(label:string){<button>@label</button>}@button('Hello')",
+            data: { condition: true },
+            output: "<button>Hello</button>",
          });
       });
 
-      it("<h1>There is no @* @title inside comment *@</h1>", async () => {
+      it("function with spaces and brackets in group", async () => {
          await torxTest({
-            template: "<h1>There is no @* @title inside comment *@</h1>",
-            data: { title: "My Title" },
-            output: "<h1>There is no </h1>",
+            template: [
+               "@function button(value: { label: string })",
+               "{<button>@value.label</button>}",
+               "@button({ label: 'Hello' })",
+            ],
+            data: { condition: true },
+            output: "<button>Hello</button>",
          });
       });
    });

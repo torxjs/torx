@@ -194,8 +194,10 @@ function transpile(source: string, data: any = {}): Promise<string> {
                      if (match) {
                         const word = match[0];
                         if (["function", "for", "if"].indexOf(word) >= 0) {
-                           // TODO: skip first (params) group that may include {
-                           const openBracketIndex = source.indexOf("{", index);
+                           // Make sure the () group is ignored
+                           const groupIndex = source.indexOf("(", index);
+                           const groupText = getMatchingPair(source.substring(groupIndex));
+                           const openBracketIndex = source.indexOf("{", groupIndex + groupText.length);
                            if (openBracketIndex >= 0) {
                               const controlText = source.substring(index, openBracketIndex);
                               output += "`);" + controlText;

@@ -3,7 +3,7 @@
    "tasks": [
       {
          "label": "Jest | Test",
-         "detail": "jest --watchAll",
+         "detail": "jest --watchAll --verbose",
          "type": "npm",
          "script": "test",
          "group": {
