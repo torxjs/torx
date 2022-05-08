@@ -39,7 +39,7 @@ export class TorxError implements TorxErrorDetails {
       return output;
    }
 
-   private getPosition(): string {
+   public getPosition(): string {
       let output = "";
       if (this.fileName) {
          output += this.fileName;
