@@ -12,7 +12,17 @@ import { TorxError } from "./torx-error";
 const AsyncFunction: FunctionConstructor = Object.getPrototypeOf(async function () {}).constructor;
 
 /**
+ * Callback for Express.
+ * @callback expressCallback
+ * @param {any} error
+ * @param {string} response
+ */
+
+/**
  * Torx template engine for Express.
+ * @param {string} filePath
+ * @param {any} options
+ * @param {expressCallback} callback
  */
 export function express(filePath: string, options: any, callback: Function) {
    fs.readFile(filePath, "utf8", (error, data) => {
@@ -32,14 +42,15 @@ export function express(filePath: string, options: any, callback: Function) {
 }
 
 /**
- * Compile a Torx source and return the output.
- * @param source - Torx code
- * @param data - optional values to pass into the template
+ * Compile Torx template code
+ * @param {string} torx - Torx template code
+ * @param {any} data - optional values to pass into the template
+ * @returns {Promise<string>}
  */
-export function compile(source: string, data = {}): Promise<string> {
+export function compile(torx: string, data = {}): Promise<string> {
    return new Promise<string>((resolve, reject) => {
-      if (source.includes("@")) {
-         transpile(source, data)
+      if (torx.includes("@")) {
+         transpile(torx, data)
             .then(script => {
                const input = [
                   "return (async () => {",
@@ -71,7 +82,7 @@ export function compile(source: string, data = {}): Promise<string> {
                reject(error);
             });
       } else {
-         resolve(source);
+         resolve(torx);
       }
    });
 }

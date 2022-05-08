@@ -3,7 +3,7 @@
       "module": "CommonJS",
       "outDir": "bin",
       "rootDir": "src",
-      "removeComments": true
+      "removeComments": false
    },
    "exclude": ["src/**/*.test.ts"]
 }
