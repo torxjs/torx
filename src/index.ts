@@ -12,14 +12,29 @@ import { TorxError } from "./torx-error";
 const AsyncFunction: FunctionConstructor = Object.getPrototypeOf(async function () {}).constructor;
 
 /**
- * Output the Torx compiler for easy access with express.
+ * Callback for Express.
+ * @callback expressCallback
+ * @param {any} error
+ * @param {string} response
+ */
+
+/**
+ * Torx template engine for Express.
+ * @param {string} filePath
+ * @param {any} options
+ * @param {expressCallback} callback
  */
 export function express(filePath: string, options: any, callback: Function) {
    fs.readFile(filePath, "utf8", (error, data) => {
       if (!error) {
          compile(data, options)
             .then(out => callback(null, out))
-            .catch((error: TorxError) => callback(error));
+            .catch((error: TorxError) => {
+               if (!error.fileName) {
+                  error.fileName = filePath;
+               }
+               callback(error);
+            });
       } else {
          callback(error);
       }
@@ -27,12 +42,60 @@ export function express(filePath: string, options: any, callback: Function) {
 }
 
 /**
- * Compile from a Torx file and output the text results.
+ * Compile Torx template code
+ * @param {string} torx - Torx template code
+ * @param {any} data - optional values to pass into the template
+ * @returns {Promise<string>}
  */
-export function compileFile(filePath: string, data: object = {}): Promise<string> {
+export function compile(torx: string, data = {}): Promise<string> {
+   return new Promise<string>((resolve, reject) => {
+      if (torx.includes("@")) {
+         transpile(torx, data)
+            .then(script => {
+               const input = [
+                  "return (async () => {",
+                  generateScriptVariables(data),
+                  "let __output = ''; ",
+                  "const __include = async (path, data = {}) => { __output += await __data.compileFile(path, data); }; ",
+                  "const file = (path, encoding) => { return __data.readFile(path, encoding); }; ",
+                  "const print = (text) => { __output += text; return text; }; ",
+                  "print(" + script + "); ",
+                  "return __output; ",
+                  "})();",
+               ];
+               const file = input.join("");
+               const torx = new AsyncFunction("__data", ts.transpile(file));
+               // Without TypeScript
+               // torx = new AsyncFunction("__data", file);
+               torx({
+                  compileFile,
+                  readFile,
+               })
+                  .then(output => {
+                     resolve(output);
+                  })
+                  .catch(error => {
+                     reject(error);
+                  });
+            })
+            .catch(error => {
+               reject(error);
+            });
+      } else {
+         resolve(torx);
+      }
+   });
+}
+
+/**
+ * Compile a Torx file and return the output.
+ * @param path - file path to Torx file
+ * @param data - optional values to pass into the template
+ */
+function compileFile(path: string, data = {}): Promise<string> {
    return new Promise((resolve, reject) => {
-      if (fs.existsSync(filePath)) {
-         fs.readFile(filePath, "utf8", (error, text) => {
+      if (fs.existsSync(path)) {
+         fs.readFile(path, "utf8", (error, text) => {
             if (!error) {
                compile(text, data)
                   .then(out => {
@@ -40,85 +103,24 @@ export function compileFile(filePath: string, data: object = {}): Promise<string
                   })
                   .catch(error => reject(error));
             } else {
-               reject(`Could not read file ${filePath}`);
+               reject(`Could not read file ${path}`);
             }
          });
       } else {
-         reject(`No file exists at '${filePath}'`);
+         reject(`No file exists at '${path}'`);
       }
    });
 }
 
 /**
- * Compile a Torx source and output the text results.
+ * Get text content of a file
  */
-export function compile(source: string, data = {}, typescript = true): Promise<string> {
-   return new Promise<string>((resolve, reject) => {
-      if (source.includes("@")) {
-         transpile(source, data)
-            .then(script => {
-               const input = [
-                  "return (async () => {",
-                  generateScriptVariables(data),
-                  "let __output = ''; ",
-                  "const __include = async (path, data = {}) => { __output += await __data.compileFile(path, data); }; ",
-                  "const print = (text) => { __output += text; return text; }; ",
-                  "print(" + script + "); ",
-                  "return __output; ",
-                  "})();",
-               ];
-               const file = input.join("");
-               let torx: Function;
-               if (typescript) {
-                  torx = new AsyncFunction("__data", ts.transpile(file));
-               } else {
-                  torx = new AsyncFunction("__data", file);
-               }
-               torx({
-                  compileFile,
-               })
-                  .then(output => {
-                     resolve(output);
-                  })
-                  .catch(error => reject(error));
-            })
-            .catch(error => {
-               reject(error);
-            });
-      } else {
-         resolve(source);
-      }
-   });
+function readFile(path: string, encoding: any = "utf-8"): any {
+   return fs.readFileSync(path, encoding);
 }
 
 /**
- * Transpile a Torx document into TypeScript.
- */
-function transpileFile(filePath: string, data?: any): Promise<string> {
-   return new Promise((resolve, reject) => {
-      if (fs.existsSync(filePath)) {
-         fs.readFile(filePath, "utf8", (error, fileData) => {
-            if (!error) {
-               transpile(fileData, data)
-                  .then(out => {
-                     resolve(out);
-                  })
-                  .catch(
-                     // TODO: Fix filePath
-                     (error: TorxError) => reject(error.setFileName(filePath))
-                  );
-            } else {
-               reject(new TorxError(`Could not read file ${filePath}`));
-            }
-         });
-      } else {
-         reject(new TorxError(`No file exists at '${filePath}'`));
-      }
-   });
-}
-
-/**
- * Converts variable data into raw JavaScript.
+ * Convert variable data into raw JavaScript.
  */
 function generateScriptVariables(data: any): string {
    let output = "";
@@ -141,11 +143,13 @@ function generateScriptVariables(data: any): string {
 
 /**
  * Transpile a Torx document into TypeScript.
- * @param {string} source - Text containing Torx syntax
- * @param {any} data - Data to include in the scope
+ * @param {string} source - text containing Torx syntax
+ * @param {any} data - data to include in the scope
  */
 function transpile(source: string, data: any = {}): Promise<string> {
    return new Promise<string>(async (resolve, reject) => {
+      // Remove all @/ comments if not @@/
+      source = source.replace(/(?<!@)@\/.*$/gm, "");
       let symbolPos = source.indexOf("@");
       if (symbolPos >= 0) {
          let output = "`" + source.substring(0, symbolPos);
@@ -201,8 +205,10 @@ function transpile(source: string, data: any = {}): Promise<string> {
                      if (match) {
                         const word = match[0];
                         if (["function", "for", "if"].indexOf(word) >= 0) {
-                           // TODO: skip first (params) group that may include {
-                           const openBracketIndex = source.indexOf("{", index);
+                           // Make sure the () group is ignored
+                           const groupIndex = source.indexOf("(", index);
+                           const groupText = getMatchingPair(source.substring(groupIndex));
+                           const openBracketIndex = source.indexOf("{", groupIndex + groupText.length);
                            if (openBracketIndex >= 0) {
                               const controlText = source.substring(index, openBracketIndex);
                               output += "`);" + controlText;
@@ -277,13 +283,15 @@ function transpile(source: string, data: any = {}): Promise<string> {
                         } else {
                            const variable = getVariable(source.substring(index + word.length));
                            if (variable) {
-                              output += "` + (" + word + variable + " || '') + `";
+                              output += "` + (" + word + variable + ") + `";
                               index += word.length + variable.length;
                            } else {
-                              output += "` + (" + word + " || '') + `";
+                              output += "` + (" + word + ") + `";
                               index += word.length;
                            }
                         }
+                     } else {
+                        reject(generateTorxError(`Unexpected token ${source.charAt(index)}`, source, index));
                      }
                      break;
                }
@@ -403,14 +411,14 @@ function getMatchingQuotes(text: string): string {
 
 /**
  * Get the column number and line number from a source and index.
- * @param {string} message - The error message to display
- * @param {string} source - The text containing multiple lines
- * @param {number} index - Location to get line number from
+ * @param {string} message - error message to display
+ * @param {string} source - text containing multiple lines
+ * @param {number} index - location to get line number from
  */
 function generateTorxError(message: string, source: string, index: number): TorxError {
    const leadingText = source.substring(0, index);
    const leadingLines = leadingText.split("\n");
    const lineNumber = leadingLines.length;
    const columnNumber = leadingLines[lineNumber - 1].length;
-   return new TorxError(message, columnNumber, lineNumber);
+   return new TorxError(message, { columnNumber, lineNumber, source });
 }

@@ -1,6 +1,0 @@
-@{
-    const documentType = "plain text file";
-}
-This is a @documentType.
-
-A @documentType is very simple.

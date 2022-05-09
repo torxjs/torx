@@ -34,14 +34,21 @@ if (isCLI) {
             break;
          default:
             const startTime = performance.now();
-            const out = getOutPath(args[0], args[1]);
-            writeFile(args[0], out)
-               .then(outPath => {
-                  const endTime = performance.now();
-                  const buildTime = (endTime - startTime).toFixed();
-                  console.log(`BUILD: ${outPath} (${buildTime} ms)`);
-               })
-               .catch(error => console.log(error));
+            let out;
+            try {
+               out = getOutPath(args[0], args[1]);
+            } catch (error) {
+               console.log("ERROR:", error);
+            }
+            if (out) {
+               createFile(args[0], out)
+                  .then(outPath => {
+                     const endTime = performance.now();
+                     const buildTime = (endTime - startTime).toFixed();
+                     console.log(`BUILD: ${outPath} (${buildTime} ms)`);
+                  })
+                  .catch(error => console.log(error));
+            }
             break;
       }
    } else {
@@ -51,23 +58,33 @@ if (isCLI) {
 
 /**
  * Compiles and creates the the output file
- * @param source - the torx file path
- * @param out - the output file path
+ * @param sourcePath - the Torx file path
+ * @param outPath - the output file path
  */
-function writeFile(source: string, out: string): Promise<string> {
+function createFile(sourcePath: string, outPath: string): Promise<string> {
    return new Promise<string>((resolve, reject) => {
-      torx
-         .compileFile(source)
-         .then(text => {
-            fs.writeFile(out, text, error => {
-               if (!error) {
-                  resolve(out);
-               } else {
-                  reject(error);
-               }
-            });
-         })
-         .catch(error => reject(error));
+      if (fs.existsSync(sourcePath)) {
+         fs.readFile(sourcePath, "utf8", (error, text) => {
+            if (!error) {
+               torx
+                  .compile(text)
+                  .then(out => {
+                     fs.writeFile(outPath, out, error => {
+                        if (!error) {
+                           resolve(outPath);
+                        } else {
+                           reject(error);
+                        }
+                     });
+                  })
+                  .catch(error => reject(error));
+            } else {
+               reject(`Could not read file ${sourcePath}`);
+            }
+         });
+      } else {
+         reject(`No file exists at '${sourcePath}'`);
+      }
    });
 }
 
@@ -85,10 +102,10 @@ export function getOutPath(arg1: string, arg2?: string): string {
             fileName.pop();
             return fileName.join(".");
          } else {
-            throw new Error("A symantic file name must end in '.torx'");
+            throw "A symantic file name must end in '.torx'";
          }
       } else {
-         throw new Error("A symantic file name or an out path is required");
+         throw "A symantic file name or an out path is required";
       }
    } else {
       if (arg2.indexOf(".") >= 0) {
@@ -101,7 +118,7 @@ export function getOutPath(arg1: string, arg2?: string): string {
             fileName.push(arg2);
             return fileName.join(".");
          } else {
-            throw new Error("When providing an extension name, the source file must end in '.torx'");
+            throw "When providing an extension name, the source file must end in '.torx'";
          }
       }
    }
