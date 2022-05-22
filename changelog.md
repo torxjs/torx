@@ -2,13 +2,13 @@
 
 21 May 2022
 
--  `@include()` and `file()` now use relative paths
+-  `@include()` and `file()` now use relative file paths.
 
 # 1.0.0
 
 8 May 2022
 
--  Rebuild to support TypeScript
+-  Rebuild to support TypeScript.
 -  Add single line comment back as `@/`.
 -  Add `file()` to read text from a file.
 
