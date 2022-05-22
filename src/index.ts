@@ -69,8 +69,6 @@ export function compile(torx: string, data = {}, filePath = ""): Promise<string>
                ];
                const file = input.join("");
                const torx = new AsyncFunction("__data", ts.transpile(file));
-               // Without TypeScript
-               // torx = new AsyncFunction("__data", file);
                torx({
                   compileFile,
                   readFile,
@@ -127,7 +125,6 @@ function compileFile(filePath: string, data = {}, parentPath?: string): Promise<
 function readFile(filePath: string, encoding: any = "utf-8", parentPath?: string): Buffer {
    if (parentPath) {
       filePath = path.join(path.dirname(parentPath), filePath);
-      // throw "parent " + parentPath + " - " + filePath;
    }
    return fs.readFileSync(filePath, encoding);
 }
