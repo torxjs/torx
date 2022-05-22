@@ -1,3 +1,9 @@
+# 1.1.0
+
+21 May 2022
+
+-  `@include()` and `file()` now use relative paths
+
 # 1.0.0
 
 8 May 2022

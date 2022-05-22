@@ -1,7 +1,7 @@
 {
    "name": "torx",
-   "version": "1.0.0",
-   "description": "Torx formatting, syntax and snippets for Visual Studio Code",
+   "version": "1.1.0",
+   "description": "TypeScript template engine for Node.",
    "license": "MIT",
    "author": {
       "name": "Stephen Ullom",
@@ -16,9 +16,10 @@
       "url": "https://github.com/torxjs/torx/issues"
    },
    "keywords": [
-      "torx",
-      "template",
-      "javascript"
+      "template engine",
+      "typescript",
+      "javascript",
+      "torx"
    ],
    "main": "./bin/index.js",
    "bin": {

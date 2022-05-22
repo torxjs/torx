@@ -7,6 +7,7 @@
 
 import * as fs from "fs";
 import * as ts from "typescript";
+import * as path from "path";
 import { TorxError } from "./torx-error";
 
 const AsyncFunction: FunctionConstructor = Object.getPrototypeOf(async function () {}).constructor;
@@ -27,10 +28,10 @@ const AsyncFunction: FunctionConstructor = Object.getPrototypeOf(async function 
 export function express(filePath: string, options: any, callback: Function) {
    fs.readFile(filePath, "utf8", (error, data) => {
       if (!error) {
-         compile(data, options)
+         compile(data, options, filePath)
             .then(out => callback(null, out))
-            .catch((error: TorxError) => {
-               if (!error.fileName) {
+            .catch(error => {
+               if (error instanceof TorxError && !error.fileName) {
                   error.fileName = filePath;
                }
                callback(error);
@@ -45,19 +46,22 @@ export function express(filePath: string, options: any, callback: Function) {
  * Compile Torx template code
  * @param {string} torx - Torx template code
  * @param {any} data - optional values to pass into the template
+ * @param {string} filePath - the path to the source file
  * @returns {Promise<string>}
  */
-export function compile(torx: string, data = {}): Promise<string> {
+export function compile(torx: string, data = {}, filePath = ""): Promise<string> {
    return new Promise<string>((resolve, reject) => {
       if (torx.includes("@")) {
-         transpile(torx, data)
+         transpile(torx, data, filePath)
             .then(script => {
                const input = [
                   "return (async () => {",
                   generateScriptVariables(data),
                   "let __output = ''; ",
-                  "const __include = async (path, data = {}) => { __output += await __data.compileFile(path, data); }; ",
-                  "const file = (path, encoding) => { return __data.readFile(path, encoding); }; ",
+                  `const __include = async (path, data = {}, filePath = '${filePath}') => {`,
+                  `__output += await __data.compileFile(path, data, filePath); `,
+                  `}; `,
+                  `const file = (path, encoding) => { return __data.readFile(path, encoding, '${filePath}'); }; `,
                   "const print = (text) => { __output += text; return text; }; ",
                   "print(" + script + "); ",
                   "return __output; ",
@@ -65,8 +69,6 @@ export function compile(torx: string, data = {}): Promise<string> {
                ];
                const file = input.join("");
                const torx = new AsyncFunction("__data", ts.transpile(file));
-               // Without TypeScript
-               // torx = new AsyncFunction("__data", file);
                torx({
                   compileFile,
                   readFile,
@@ -89,25 +91,30 @@ export function compile(torx: string, data = {}): Promise<string> {
 
 /**
  * Compile a Torx file and return the output.
- * @param path - file path to Torx file
+ * @param filePath - file path to Torx file
  * @param data - optional values to pass into the template
+ * @param parentPath - path of parent file
+ * @returns {Promise<string>}
  */
-function compileFile(path: string, data = {}): Promise<string> {
+function compileFile(filePath: string, data = {}, parentPath?: string): Promise<string> {
    return new Promise((resolve, reject) => {
-      if (fs.existsSync(path)) {
-         fs.readFile(path, "utf8", (error, text) => {
+      if (parentPath) {
+         filePath = path.join(path.dirname(parentPath), filePath);
+      }
+      if (fs.existsSync(filePath)) {
+         fs.readFile(filePath, "utf8", (error, text) => {
             if (!error) {
-               compile(text, data)
+               compile(text, data, filePath)
                   .then(out => {
                      resolve(out);
                   })
                   .catch(error => reject(error));
             } else {
-               reject(`Could not read file ${path}`);
+               reject(`Could not read file ${filePath}`);
             }
          });
       } else {
-         reject(`No file exists at '${path}'`);
+         reject(`No file exists at '${filePath}'`);
       }
    });
 }
@@ -115,8 +122,11 @@ function compileFile(path: string, data = {}): Promise<string> {
 /**
  * Get text content of a file
  */
-function readFile(path: string, encoding: any = "utf-8"): any {
-   return fs.readFileSync(path, encoding);
+function readFile(filePath: string, encoding: any = "utf-8", parentPath?: string): Buffer {
+   if (parentPath) {
+      filePath = path.join(path.dirname(parentPath), filePath);
+   }
+   return fs.readFileSync(filePath, encoding);
 }
 
 /**
@@ -145,8 +155,9 @@ function generateScriptVariables(data: any): string {
  * Transpile a Torx document into TypeScript.
  * @param {string} source - text containing Torx syntax
  * @param {any} data - data to include in the scope
+ * @param {string} filepath - source file path
  */
-function transpile(source: string, data: any = {}): Promise<string> {
+function transpile(source: string, data = {}, filePath = ""): Promise<string> {
    return new Promise<string>(async (resolve, reject) => {
       // Remove all @/ comments if not @@/
       source = source.replace(/(?<!@)@\/.*$/gm, "");
@@ -278,7 +289,7 @@ function transpile(source: string, data: any = {}): Promise<string> {
                         } else if (word === "include") {
                            const parenthisis = getMatchingPair(source.substring(index + word.length));
                            const script = parenthisis.slice(1, -1);
-                           output += "`); await __include(" + script + "); print(`";
+                           output += "`); await __include(" + script + ", '" + filePath + "'); print(`";
                            index += word.length + parenthisis.length;
                         } else {
                            const variable = getVariable(source.substring(index + word.length));
