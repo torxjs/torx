@@ -67,7 +67,7 @@ function createFile(sourcePath: string, outPath: string): Promise<string> {
          fs.readFile(sourcePath, "utf8", (error, text) => {
             if (!error) {
                torx
-                  .compile(text)
+                  .compile(text, {}, sourcePath)
                   .then(out => {
                      fs.writeFile(outPath, out, error => {
                         if (!error) {
