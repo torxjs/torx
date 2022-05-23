@@ -45,8 +45,8 @@ export function express(filePath: string, options: any, callback: Function) {
 /**
  * Compile Torx template code
  * @param {string} torx - Torx template code
- * @param {any} data - optional values to pass into the template
- * @param {string} filePath - the path to the source file
+ * @param {any} [data] - optional values to pass into the template
+ * @param {string} [filePath] - the path to the source file
  * @returns {Promise<string>}
  */
 export function compile(torx: string, data = {}, filePath = ""): Promise<string> {

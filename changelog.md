@@ -1,6 +1,12 @@
+# 1.1.1
+
+22 May 2022
+
+-  Fix `torx.compile()` parameters not optional.
+
 # 1.1.0
 
-21 May 2022
+22 May 2022
 
 -  `@include()` and `file()` now use relative file paths.
 
