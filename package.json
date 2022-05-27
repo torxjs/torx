@@ -30,7 +30,8 @@
       "test": "jest --watchAll --verbose"
    },
    "files": [
-      "bin"
+      "bin",
+      "readme.md"
    ],
    "dependencies": {
       "typescript": "^4.5.2"
