@@ -54,7 +54,7 @@
    "jest": {
       "preset": "ts-jest",
       "testEnvironment": "node",
-      "rootDir": "src"
+      "rootDir": "lib"
    },
    "devDependencies": {
       "@types/jest": "^27.0.3",
