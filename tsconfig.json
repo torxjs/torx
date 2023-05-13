@@ -1,9 +1,10 @@
 {
    "compilerOptions": {
       "module": "CommonJS",
-      "outDir": "bin",
-      "rootDir": "src",
-      "removeComments": false
+      "outDir": "dist",
+      "rootDir": "lib",
+      "removeComments": false,
+      "declaration": true
    },
-   "exclude": ["src/**/*.test.ts"]
+   "exclude": ["lib/**/*.test.ts"]
 }
