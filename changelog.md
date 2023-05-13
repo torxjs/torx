@@ -1,3 +1,9 @@
+# 1.1.2
+
+13 May 2023
+
+-  Fix types not exporting.
+
 # 1.1.1
 
 22 May 2022
