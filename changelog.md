@@ -3,6 +3,7 @@
 13 May 2023
 
 -  Fix types not exporting.
+-  Export `torx.compileFile()`
 
 # 1.1.1
 

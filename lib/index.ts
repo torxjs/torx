@@ -93,13 +93,13 @@ export function compile(torx: string, data = {}, filePath = ""): Promise<string>
  * Compile a Torx file and return the output.
  * @param filePath - file path to Torx file
  * @param data - optional values to pass into the template
- * @param parentPath - path of parent file
+ * @param parentFilePath - path of parent file
  * @returns {Promise<string>}
  */
-function compileFile(filePath: string, data = {}, parentPath?: string): Promise<string> {
+export function compileFile(filePath: string, data = {}, parentFilePath?: string): Promise<string> {
    return new Promise((resolve, reject) => {
-      if (parentPath) {
-         filePath = path.join(path.dirname(parentPath), filePath);
+      if (parentFilePath) {
+         filePath = path.join(path.dirname(parentFilePath), filePath);
       }
       if (fs.existsSync(filePath)) {
          fs.readFile(filePath, "utf8", (error, text) => {
