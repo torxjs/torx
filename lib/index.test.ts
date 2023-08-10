@@ -128,11 +128,43 @@ describe("compile", () => {
          });
       });
 
+      it("compact if else", async () => {
+         await torxTest({
+            template: "@if(condition){Hello}else{Goodbye}",
+            data: { condition: false },
+            output: "Goodbye",
+         });
+      });
+
+      it("compact if else if", async () => {
+         await torxTest({
+            template: "@if(condition){Hello}else if(condition2){Goodbye}",
+            data: { condition: false, condition2: true },
+            output: "Goodbye",
+         });
+      });
+
+      it("compact if else if else", async () => {
+         await torxTest({
+            template: "@if(condition){Hello}else if(condition2){Goodbye}else{Finally}",
+            data: { condition: false, condition2: false },
+            output: "Finally",
+         });
+      });
+
       it("if with spaces", async () => {
          await torxTest({
             template: "@if ( condition ) { Hello }",
             data: { condition: true },
             output: " Hello ",
+         });
+      });
+
+      it("if else with spaces", async () => {
+         await torxTest({
+            template: "@if ( condition ) { Hello } else { Goodbye }",
+            data: { condition: false },
+            output: " Goodbye ",
          });
       });
 

@@ -8,6 +8,7 @@
 import * as fs from "fs";
 import * as ts from "typescript";
 import * as path from "path";
+
 import { TorxError } from "./torx-error";
 
 const AsyncFunction: FunctionConstructor = Object.getPrototypeOf(async function () {}).constructor;
@@ -246,11 +247,11 @@ function transpile(source: string, data = {}, filePath = ""): Promise<string> {
                                              break;
                                           case "if":
                                              output += "{ print(" + script;
-                                             let precedingText = source.substring(index, index + " else ".length);
-                                             while (precedingText === " else ") {
+                                             let elseMatch = String(source.substring(index).match(/^\s*else[\s{]/));
+                                             while (elseMatch) {
                                                 const nextBracketIndex = source.indexOf("{", index);
                                                 const elseText = source.substring(index, nextBracketIndex + 1);
-                                                let nextBracketGroup;
+                                                let nextBracketGroup: string;
                                                 if (nextBracketIndex !== -1) {
                                                    output += "); }" + elseText + " print(";
                                                    nextBracketGroup = getMatchingPair(
@@ -259,14 +260,17 @@ function transpile(source: string, data = {}, filePath = ""): Promise<string> {
                                                 } else {
                                                    break;
                                                 }
-                                                let newContent = nextBracketGroup.substring(1, bracketPair.length - 1);
+                                                let newContent = nextBracketGroup.substring(
+                                                   1,
+                                                   nextBracketGroup.length - 1
+                                                );
                                                 await transpile(newContent, data)
                                                    .then(newScript => {
                                                       output += newScript;
                                                    })
                                                    .catch(error => reject(error));
                                                 index = nextBracketIndex + nextBracketGroup.length;
-                                                precedingText = source.substring(index, index + " else ".length);
+                                                elseMatch = String(source.substring(index).match(/^\s*else[\s{]/));
                                              }
                                              output += "); } print(`";
                                              break;
