@@ -30,7 +30,6 @@
       "start": "node ./dist/cli.js",
       "build": "tsc",
       "test": "jest --watchAll --verbose",
-      "publish": "npm run build && npm publish",
       "pretty": "npx prettier --write ."
    },
    "files": [
