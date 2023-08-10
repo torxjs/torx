@@ -156,7 +156,7 @@ function generateScriptVariables(data: any): string {
  * Transpile a Torx document into TypeScript.
  * @param {string} source - text containing Torx syntax
  * @param {any} data - data to include in the scope
- * @param {string} filepath - source file path
+ * @param {string} filePath - source file path
  */
 function transpile(source: string, data = {}, filePath = ""): Promise<string> {
    return new Promise<string>(async (resolve, reject) => {
@@ -247,7 +247,9 @@ function transpile(source: string, data = {}, filePath = ""): Promise<string> {
                                              break;
                                           case "if":
                                              output += "{ print(" + script;
-                                             let elseMatch = String(source.substring(index).match(/^\s*else[\s{]/));
+                                             let elseMatch = String(
+                                                source.substring(index).match(/^\s*else[\s{]/) || ""
+                                             );
                                              while (elseMatch) {
                                                 const nextBracketIndex = source.indexOf("{", index);
                                                 const elseText = source.substring(index, nextBracketIndex + 1);
@@ -270,7 +272,9 @@ function transpile(source: string, data = {}, filePath = ""): Promise<string> {
                                                    })
                                                    .catch(error => reject(error));
                                                 index = nextBracketIndex + nextBracketGroup.length;
-                                                elseMatch = String(source.substring(index).match(/^\s*else[\s{]/));
+                                                elseMatch = String(
+                                                   source.substring(index).match(/^\s*else[\s{]/) || ""
+                                                );
                                              }
                                              output += "); } print(`";
                                              break;

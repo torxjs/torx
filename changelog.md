@@ -1,3 +1,9 @@
+# 1.1.5
+
+9 August 2023
+
+-  Fix multiple ifs bug.
+
 # 1.1.4
 
 9 August 2023

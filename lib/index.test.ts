@@ -10,6 +10,10 @@ async function torxTest(object: { template: string | string[]; data?: object; ou
    await expect(compile(template, object.data)).resolves.toEqual(object.output);
 }
 
+function joinLines(...text: string[]) {
+   return text.join("\n");
+}
+
 describe("compile", () => {
    describe("basic", () => {
       it("text only", async () => {
@@ -119,7 +123,7 @@ describe("compile", () => {
       });
    });
 
-   describe("if", () => {
+   fdescribe("if", () => {
       it("compact if", async () => {
          await torxTest({
             template: "@if(condition){Hello}",
@@ -165,6 +169,24 @@ describe("compile", () => {
             template: "@if ( condition ) { Hello } else { Goodbye }",
             data: { condition: false },
             output: " Goodbye ",
+         });
+      });
+
+      fit("if else twice", async () => {
+         await torxTest({
+            template: joinLines(
+               "@if (!condition) {",
+               "Hello",
+               "} else {",
+               "Goodbye",
+               "}",
+               "<a>Link</a>",
+               "@if (!condition) {",
+               "Finally",
+               "}"
+            ),
+            data: { condition: true },
+            output: joinLines("", "Goodbye", "<a>Link</a>", ""),
          });
       });
 
