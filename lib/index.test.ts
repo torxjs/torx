@@ -258,4 +258,21 @@ describe("compile", () => {
          });
       });
    });
+
+   describe("include", () => {
+      it("empty file", async () => {
+         await torxTest({
+            template: "@include('./test/test.torx')",
+            output: "<h1></h1>",
+         });
+      });
+
+      it("file with data", async () => {
+         await torxTest({
+            template: "@include('./test/test.torx')",
+            data: { title: "Title" },
+            output: "<h1></h1>",
+         });
+      });
+   });
 });

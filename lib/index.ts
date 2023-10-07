@@ -304,7 +304,7 @@ function transpile(source: string, data: any = {}, filePath: string = ""): Promi
                            // Include
                            const parenthisis = getMatchingPair(source.substring(index + word.length));
                            const script = parenthisis.slice(1, -1);
-                           output += `"); await __include(${script}, '${filePath}'); print(\``;
+                           output += `\`); await __include(${script}, '${filePath}'); print(\``;
                            index += word.length + parenthisis.length;
                         } else {
                            // Implicit

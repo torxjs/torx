@@ -1,6 +1,6 @@
 {
    "name": "torx",
-   "version": "1.2.0",
+   "version": "1.2.1",
    "description": "TypeScript template engine for Node.",
    "license": "MIT",
    "author": {
