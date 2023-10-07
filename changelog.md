@@ -1,3 +1,10 @@
+# 1.2.0
+
+7 October 2023
+
+-  No longer errors if undefined or null.
+-  Add support for optional chaining `name?.first`.
+
 # 1.1.5
 
 9 August 2023

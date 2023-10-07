@@ -1,7 +1,7 @@
 import { compile } from "./index";
 
 async function torxTest(object: { template: string | string[]; data?: object; output: string }): Promise<void> {
-   let template;
+   let template: string;
    if (Array.isArray(object.template)) {
       template = object.template.join("");
    } else {
@@ -88,6 +88,36 @@ describe("compile", () => {
          });
       });
 
+      it("undefined variable", async () => {
+         await torxTest({
+            template: "<h1>@name<h1>",
+            output: "<h1><h1>",
+         });
+      });
+
+      it("null variable", async () => {
+         await torxTest({
+            template: "<h1>@name<h1>",
+            data: { name: null },
+            output: "<h1><h1>",
+         });
+      });
+
+      it("optional chaining undefined", async () => {
+         await torxTest({
+            template: "<h1>@name?.first<h1>",
+            output: "<h1><h1>",
+         });
+      });
+
+      it("optional chaining", async () => {
+         await torxTest({
+            template: "<h1>@name?.first<h1>",
+            data: { name: { first: "John" } },
+            output: "<h1>John<h1>",
+         });
+      });
+
       it("call function from data", async () => {
          await torxTest({
             template: "@getTitle()",
@@ -123,7 +153,7 @@ describe("compile", () => {
       });
    });
 
-   fdescribe("if", () => {
+   describe("if", () => {
       it("compact if", async () => {
          await torxTest({
             template: "@if(condition){Hello}",
@@ -172,7 +202,7 @@ describe("compile", () => {
          });
       });
 
-      fit("if else twice", async () => {
+      it("if else twice", async () => {
          await torxTest({
             template: joinLines(
                "@if (!condition) {",

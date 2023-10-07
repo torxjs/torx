@@ -158,7 +158,7 @@ function generateScriptVariables(data: any): string {
  * @param {any} data - data to include in the scope
  * @param {string} filePath - source file path
  */
-function transpile(source: string, data = {}, filePath = ""): Promise<string> {
+function transpile(source: string, data: any = {}, filePath: string = ""): Promise<string> {
    return new Promise<string>(async (resolve, reject) => {
       // Remove all @/ comments if not @@/
       source = source.replace(/(?<!@)@\/.*$/gm, "");
@@ -170,19 +170,23 @@ function transpile(source: string, data = {}, filePath = ""): Promise<string> {
          do {
             index++;
             if (source.charAt(index) === "*") {
+               // Begin comment
                index++;
                commentDepth++;
             } else if (commentDepth > 0) {
                if (source.charAt(index - 2) === "*") {
+                  // End comment
                   commentDepth--;
                }
             } else {
                switch (source.charAt(index)) {
                   case "@":
+                     // Escape with @@
                      output += "@";
                      index++;
                      break;
                   case "/":
+                     // Single line comment
                      if (source.charAt(index + 1) === "/") {
                         const endOfLine = source.indexOf("\n", index + 1);
                         index = endOfLine;
@@ -192,6 +196,7 @@ function transpile(source: string, data = {}, filePath = ""): Promise<string> {
                      }
                      break;
                   case "(":
+                     // Explicit group
                      const groupPair = getMatchingPair(source.substring(index));
                      if (groupPair) {
                         output += "` + " + groupPair + " + `";
@@ -201,6 +206,7 @@ function transpile(source: string, data = {}, filePath = ""): Promise<string> {
                      }
                      break;
                   case "{":
+                     // Code block
                      const bracketPair = getMatchingPair(source.substring(index));
                      if (bracketPair) {
                         output += "`);" + bracketPair.substring(1, bracketPair.length - 1) + "print(`";
@@ -242,11 +248,12 @@ function transpile(source: string, data = {}, filePath = ""): Promise<string> {
                                     .then(async script => {
                                        switch (word) {
                                           case "function":
-                                             output += "{ return " + script + "; } print(`";
-
+                                             // Function
+                                             output += `{ return ${script}; } print(\``;
                                              break;
                                           case "if":
-                                             output += "{ print(" + script;
+                                             // If
+                                             output += `{ print(${script}`;
                                              let elseMatch = String(
                                                 source.substring(index).match(/^\s*else[\s{]/) || ""
                                              );
@@ -255,7 +262,7 @@ function transpile(source: string, data = {}, filePath = ""): Promise<string> {
                                                 const elseText = source.substring(index, nextBracketIndex + 1);
                                                 let nextBracketGroup: string;
                                                 if (nextBracketIndex !== -1) {
-                                                   output += "); }" + elseText + " print(";
+                                                   output += `); }${elseText} print(`;
                                                    nextBracketGroup = getMatchingPair(
                                                       source.substring(nextBracketIndex)
                                                    );
@@ -280,7 +287,6 @@ function transpile(source: string, data = {}, filePath = ""): Promise<string> {
                                              break;
                                           default:
                                              output += "{ print(" + script + "); } print(`";
-
                                              break;
                                        }
                                        if (source.charAt(index) === "\n") {
@@ -295,19 +301,17 @@ function transpile(source: string, data = {}, filePath = ""): Promise<string> {
                               reject(generateTorxError("Expecting {", source, index));
                            }
                         } else if (word === "include") {
+                           // Include
                            const parenthisis = getMatchingPair(source.substring(index + word.length));
                            const script = parenthisis.slice(1, -1);
-                           output += "`); await __include(" + script + ", '" + filePath + "'); print(`";
+                           output += `"); await __include(${script}, '${filePath}'); print(\``;
                            index += word.length + parenthisis.length;
                         } else {
+                           // Implicit
                            const variable = getVariable(source.substring(index + word.length));
-                           if (variable) {
-                              output += "` + (" + word + variable + ") + `";
-                              index += word.length + variable.length;
-                           } else {
-                              output += "` + (" + word + ") + `";
-                              index += word.length;
-                           }
+                           const expression = variable ? word + variable : word;
+                           output += `\` + (typeof ${word} !== 'undefined' ? ${expression} ?? '' : '') + \``;
+                           index += expression.length;
                         }
                      } else {
                         reject(generateTorxError(`Unexpected token ${source.charAt(index)}`, source, index));
@@ -336,18 +340,23 @@ function transpile(source: string, data = {}, filePath = ""): Promise<string> {
 
 /**
  * Detect and return a variable or parenthetical group.
- * @param {string} text - detects .word, () or []
+ * @param {string} text - detects .word, (), [], or ?.word
  */
 function getVariable(text: string): string {
    const firstChar = text.charAt(0);
-   if (["(", "["].indexOf(firstChar) >= 0) {
-      const pair = getMatchingPair(text);
-      return pair + getVariable(text.substring(pair.length));
-   } else if (firstChar === ".") {
-      const word = text.substring(1).match(/\w+/)[0];
-      return "." + word + getVariable(text.substring(word.length + 1));
-   } else {
-      return "";
+   switch (firstChar) {
+      case "(":
+      case "[":
+         const pair = getMatchingPair(text);
+         return pair + getVariable(text.substring(pair.length));
+      case "?":
+         const next = text.substring(1).match(/[\w.]+/)[0];
+         return firstChar + next + getVariable(text.substring(next.length + 1));
+      case ".":
+         const word = text.substring(1).match(/\w+/)[0];
+         return firstChar + word + getVariable(text.substring(word.length + 1));
+      default:
+         return "";
    }
 }
 
