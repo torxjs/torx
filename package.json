@@ -29,14 +29,16 @@
    "scripts": {
       "start": "node ./dist/cli.js",
       "build": "tsc",
-      "test": "jest --watchAll --verbose",
-      "pretty": "npx prettier --write ."
+      "test": "jest",
+      "test:watch": "jest --watchAll --verbose",
+      "pretty": "npx prettier --write .",
+      "prepublishOnly": "npm run build && npm test"
    },
    "files": [
       "dist"
    ],
    "dependencies": {
-      "typescript": "^4.5.2"
+      "typescript": "^5.9.3"
    },
    "prettier": {
       "tabWidth": 3,
@@ -44,28 +46,18 @@
       "arrowParens": "avoid",
       "trailingComma": "all"
    },
-   "eslintConfig": {
-      "extends": [
-         "prettier"
-      ],
-      "parser": "@typescript-eslint/parser",
-      "rules": {
-         "no-extra-parens": "off"
-      }
-   },
    "jest": {
       "preset": "ts-jest",
       "testEnvironment": "node",
       "rootDir": "lib"
    },
    "devDependencies": {
-      "@types/jest": "^27.0.3",
-      "@types/node": "^16.18.29",
-      "@typescript-eslint/eslint-plugin": "^5.4.0",
-      "@typescript-eslint/parser": "^5.4.0",
-      "eslint": "^8.3.0",
-      "eslint-config-prettier": "^8.3.0",
-      "jest": "^27.5.1",
-      "ts-jest": "^27.1.4"
+      "@types/jest": "^29.5.14",
+      "@types/node": "^22.0.0",
+      "jest": "^29.7.0",
+      "ts-jest": "^29.4.0"
+   },
+   "engines": {
+      "node": ">=16"
    }
 }

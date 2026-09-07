@@ -1,229 +1,168 @@
 #!/usr/bin/env node
 
-"use strict";
-
-import { promises as fs } from "fs";
+import * as fs from "fs";
 import * as path from "path";
 import { performance } from "perf_hooks";
+import { compileFile, TorxError } from ".";
 
-import * as torx from ".";
-import { Configuration } from "./types";
+/**
+ * Usage:
+ *   torx <input.torx>                       print the output to stdout
+ *   torx <input.torx> -o <output>           write the output to a file
+ *   torx <input.torx> -d <data.json>        pass values from a JSON file into the template
+ */
 
-const commandLine = require.main === module;
+export interface CliOptions {
+   input?: string;
+   out?: string;
+   data?: string;
+   help: boolean;
+   version: boolean;
+}
 
-const configuration: Configuration = {
-   sourceFile: undefined,
-   sourceFolder: undefined,
-   distributionFolder: undefined,
-   watch: false,
-   // dryRun: false,
-};
+export const HELP_TEXT = [
+   "Usage: torx <input.torx> [options]",
+   "",
+   "Compile a Torx template. The output is printed to stdout unless --out is given.",
+   "",
+   "Options:",
+   "  -o, --out <path>    write the output to this file",
+   "  -d, --data <path>   JSON file with values available in the template",
+   "  -v, --version       print the torx version",
+   "  -h, --help          print this help",
+   "",
+   "Examples:",
+   "  torx page.html.torx -o page.html",
+   "  torx email.torx -d customer.json -o email.html",
+   "  torx page.html.torx > page.html",
+].join("\n");
 
-const options = [
-   {
-      command: ["-v", "--version"],
-      description: "Print torx version.",
-      action: () => {
-         printVersion();
-         process.exit(0);
-      },
-   },
-   {
-      command: ["-h", "--help"],
-      description: "List all command line options.",
-      action: () => {
-         printHelp();
-         process.exit(0);
-      },
-   },
-   {
-      command: ["-w", "--watch"],
-      description: "Watch for changes.",
-      action: () => (configuration.watch = true),
-   },
-   // {
-   //    command: ["-d", "--dry-run"],
-   //    description: "Print which files will be compiled.",
-   //    action: () => (configuration.dryRun = true),
-   // },
-];
-
-if (commandLine) {
-   const args = process.argv.slice(2);
-
-   for (const arg of args) {
-      const option = options.find(option => option.command.includes(arg));
-
-      if (option) {
-         option.action();
-      } else {
-         if (arg.startsWith("-")) {
-            // An unknown command option
-            exitError(`Unknown option '${arg}'`);
-         } else if (!configuration.sourceFolder) {
-            if (arg.endsWith(".torx")) {
-               configuration.sourceFile = path.basename(arg);
-               configuration.sourceFolder = path.dirname(arg);
+/**
+ * Parse command line arguments. Throws a string describing the first invalid argument.
+ * @param args - arguments after the program name
+ */
+export function parseArgs(args: string[]): CliOptions {
+   const options: CliOptions = { help: false, version: false };
+   for (let index = 0; index < args.length; index++) {
+      const arg = args[index];
+      switch (arg) {
+         case "-h":
+         case "--help":
+            options.help = true;
+            break;
+         case "-v":
+         case "--version":
+            options.version = true;
+            break;
+         case "-o":
+         case "--out":
+         case "-d":
+         case "--data": {
+            const value = args[index + 1];
+            if (value === undefined || value.startsWith("-")) {
+               throw `${arg} requires a file path`;
+            }
+            if (arg === "-o" || arg === "--out") {
+               options.out = value;
             } else {
-               configuration.sourceFolder = arg;
+               options.data = value;
             }
-         } else if (!configuration.distributionFolder) {
-            configuration.distributionFolder = arg;
-         } else {
-            exitError(`Unknown option '${arg}'`);
+            index++;
+            break;
          }
-      }
-   }
-
-   if (!configuration.sourceFolder) {
-      exitError("The source file or folder must be provided.");
-   }
-
-   compile(configuration);
-}
-
-async function compile(configuration: Configuration) {
-   if (configuration.watch) {
-      console.log(`Watching for changes in ${configuration.sourceFolder}...`);
-
-      // Watch for changes
-      const watcher = fs.watch(configuration.sourceFolder);
-
-      for await (const event of watcher) {
-         if (event.eventType == "change" && path.extname(event.filename) === ".torx") {
-            const startTime = performance.now();
-
-            const fullPath = path.join(configuration.sourceFolder, event.filename);
-            const distributionFolder = configuration.distributionFolder || configuration.sourceFolder;
-            const outputFilename = path.join(distributionFolder, path.basename(fullPath, ".torx"));
-
-            try {
-               const compiled = await compileFile(fullPath, outputFilename);
-
-               const endTime = performance.now();
-               const buildTime = (endTime - startTime).toFixed();
-               console.log(`BUILD: ${compiled} ${buildTime} ms`);
-            } catch (error) {
-               console.error(`ERROR: ${error}`);
+         default:
+            if (arg.startsWith("-")) {
+               throw `Unknown option '${arg}'`;
             }
-         }
-      }
-   } else {
-      const startTime = performance.now();
-
-      if (configuration.sourceFile) {
-         // Single file
-         const compiled = await compileFile(configuration.sourceFile, configuration.distributionFolder);
-
-         const endTime = performance.now();
-         const buildTime = (endTime - startTime).toFixed();
-
-         console.log(`BUILD: ${compiled} ${buildTime} ms`);
-      } else {
-         // All files in folder
-         const torxFiles = await findTorxFiles(configuration.sourceFolder);
-
-         try {
-            await Promise.all(
-               torxFiles.map(async file => {
-                  const outPath = path.join(configuration.distributionFolder, path.basename(file, ".torx"));
-
-                  const compiled = await compileFile(file, outPath);
-                  console.log(`BUILD: ${compiled}`);
-               }),
-            );
-
-            const endTime = performance.now();
-            const buildTime = (endTime - startTime).toFixed();
-
-            console.log(`\nBUILD TIME: ${buildTime} ms`);
-         } catch (error) {
-            exitError(error);
-         }
+            if (options.input !== undefined) {
+               throw `Unexpected argument '${arg}'. Use --out to set the output path.`;
+            }
+            options.input = arg;
+            break;
       }
    }
+   return options;
 }
 
 /**
- * Find all Torx files in a directory
- * @param directory - the directory to search
+ * Read and parse the JSON data file.
  */
-async function findTorxFiles(directory: string): Promise<string[]> {
-   let torxFiles: string[] = [];
-
-   const files = await fs.readdir(directory);
-
-   await Promise.all(
-      files.map(async file => {
-         const fullPath = path.join(directory, file);
-         const stat = await fs.stat(fullPath);
-
-         if (stat.isDirectory()) {
-            // Recursively search in subdirectories
-            torxFiles = torxFiles.concat(await findTorxFiles(fullPath));
-         } else if (path.extname(file) === ".torx") {
-            // If the file has a .torx extension, add it to the list
-            torxFiles.push(fullPath);
-         }
-      }),
-   );
-
-   return torxFiles;
-}
-
-/**
- * Compiles and creates the the output file
- * @param sourcePath - the Torx file path
- * @param outPath - the output file path
- */
-async function compileFile(sourcePath: string, outPath: string): Promise<string> {
+function readData(dataPath: string): any {
+   let text: string;
    try {
-      const text = await fs.readFile(sourcePath, "utf8");
-      const compiledOutput = await torx.compile(text, {}, sourcePath);
-
-      await fs.writeFile(outPath, compiledOutput);
-
-      return outPath;
-   } catch (error) {
-      throw `${error}: (${sourcePath})`;
+      text = fs.readFileSync(dataPath, "utf8");
+   } catch {
+      throw `Could not read data file '${dataPath}'`;
+   }
+   try {
+      return JSON.parse(text);
+   } catch (error: any) {
+      throw `Could not parse '${dataPath}' as JSON: ${error?.message ?? error}`;
    }
 }
 
 /**
- * Print the package version number
+ * Turn any thrown value into a message for the terminal.
  */
-function printVersion() {
-   const packageJson = require("../package.json");
-
-   console.log(`${packageJson.name}@${packageJson.version}`);
+function formatError(error: unknown): string {
+   if (error instanceof TorxError) {
+      return error.toString();
+   }
+   if (error instanceof Error) {
+      return `${error.name}: ${error.message}`;
+   }
+   return String(error);
 }
 
 /**
- * Print the list ofcommand line options
+ * Run the command line interface.
+ * @param args - arguments after the program name
+ * @returns the process exit code
  */
-function printHelp() {
-   console.log("\nUsage: torx [source-folder] [distribution-folder] [options]");
+export async function run(args: string[]): Promise<number> {
+   let options: CliOptions;
+   try {
+      options = parseArgs(args);
+   } catch (error) {
+      console.error(`ERROR: ${formatError(error)}\n`);
+      console.error(HELP_TEXT);
+      return 1;
+   }
+   if (options.help) {
+      console.log(HELP_TEXT);
+      return 0;
+   }
+   if (options.version) {
+      console.log("torx@" + require("../package.json").version);
+      return 0;
+   }
+   if (!options.input) {
+      console.error("ERROR: An input file is required.\n");
+      console.error(HELP_TEXT);
+      return 1;
+   }
 
-   console.log("\nOptions: ");
+   const startTime = performance.now();
+   try {
+      const data = options.data ? readData(options.data) : {};
+      const output = await compileFile(options.input, data);
+      if (options.out) {
+         fs.mkdirSync(path.dirname(options.out), { recursive: true });
+         fs.writeFileSync(options.out, output);
+         const buildTime = (performance.now() - startTime).toFixed();
+         console.log(`BUILD: ${options.out} (${buildTime} ms)`);
+      } else {
+         process.stdout.write(output);
+      }
+      return 0;
+   } catch (error) {
+      console.error("ERROR: " + formatError(error));
+      return 1;
+   }
+}
 
-   const commands = options.map(option => option.command.join(", "));
-   const longestCommand = commands.reduce((longest, command) => Math.max(longest, command.length), 0);
-
-   options.forEach(option => {
-      const command = option.command.join(", ");
-      const padding = " ".repeat(longestCommand - command.length);
-
-      console.log(`  ${command}${padding}  ${option.description}`);
+if (require.main === module) {
+   run(process.argv.slice(2)).then(code => {
+      process.exitCode = code;
    });
-
-   console.log();
-}
-
-/**
- * Exit with an error message
- * @param message - the error message
- */
-function exitError(message: string) {
-   console.error(`ERROR: ${message}`);
-   process.exit(1);
 }

@@ -26,10 +26,10 @@
       },
       {
          "label": "Torx | Build",
-         "detail": "torx ${relativeFile} html",
+         "detail": "torx ${relativeFile} -o ${relativeFileDirname}/${fileBasenameNoExtension}",
          "type": "shell",
          "command": "torx",
-         "args": ["${relativeFile}", "html"]
+         "args": ["${relativeFile}", "-o", "${relativeFileDirname}/${fileBasenameNoExtension}"]
       }
    ]
 }
